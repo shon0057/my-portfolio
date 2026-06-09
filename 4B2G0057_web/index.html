@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的個人作品集 - 掃地雷</title>
+    <!-- Tailwind CSS 引入 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #020617;
+            scroll-behavior: smooth; /* 確保所有跳轉都是滑順滾動 */
+        }
+
+        .glass-effect {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hero-gradient {
+            background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent),
+                        radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.15), transparent);
+        }
+
+        /* 自定義滾動條 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="text-slate-200">
+
+    <!-- 導覽列 -->
+    <nav class="fixed top-0 w-full z-50 glass-effect border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2 font-bold text-xl tracking-tighter text-white">
+                <span class="bg-blue-600 px-2 py-0.5 rounded text-sm">Portfolio</span> 
+            </div>
+            <div class="hidden md:flex gap-8 text-sm font-medium">
+                <a href="#home" class="hover:text-blue-400 transition">首頁</a>
+                <a href="#projects" class="hover:text-blue-400 transition">作品展示</a>
+                <a href="#contact" class="hover:text-blue-400 transition">聯絡我</a>
+            </div>
+            <!-- 右上角聯絡我按鈕：直接滑動至底部 -->
+            <a href="#contact" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-full text-sm font-bold transition shadow-lg shadow-blue-900/20">
+                聯絡我
+            </a>
+        </div>
+    </nav>
+
+    <!-- 英雄介紹區 -->
+    <section id="home" class="relative pt-32 pb-20 px-6 hero-gradient">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
+            <div class="flex-1 text-center md:text-left">
+                <h1 class="text-5xl md:text-7xl font-extrabold text-white mb-6 leading-tight">
+                    探索<span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">程式</span>的無限可能
+                </h1>
+                <p class="text-slate-400 text-lg mb-8 max-w-xl">
+                    你好！我是 陳正恩，一名熱衷於程式應用的南台科大 資工系學生。歡迎來到我的個人網站！
+                </p>
+                <div class="flex flex-wrap justify-center md:justify-start gap-4">
+                    <a href="#projects" class="bg-white text-slate-900 px-8 py-3 rounded-xl font-bold hover:bg-slate-200 transition">
+                        查看作品集
+                    </a>
+                    <!-- 快速社群連結（已改用內聯 SVG 圖標，不需連網即可顯示） -->
+                    <div class="flex items-center gap-6 px-4 text-slate-400">
+                        <!-- GitHub -->
+                        <a href="https://github.com/shon0057" target="_blank" class="hover:text-white transition" title="前往我的 GitHub">
+                            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path>
+                                <path d="M9 18c-4.51 2-5-2-7-2"></path>
+                            </svg>
+                        </a>
+                        <!-- YouTube -->
+                        <a href="https://youtube.com/channel/UCmaDRwH7_G8uvwJQyQ9G3eQ?si=j93ntuV9p2vd7bJ8" target="_blank" class="hover:text-red-500 transition" title="前往我的 YouTube">
+                            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17z"></path>
+                                <polygon points="10 15 15 12 10 9"></polygon>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- 個人照裝飾區 -->
+            <div class="relative">
+                <div class="w-64 h-64 md:w-80 md:h-80 rounded-3xl overflow-hidden rotate-3 shadow-2xl border-4 border-slate-800">
+                    <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400" alt="頭像" class="w-full h-full object-cover">
+                </div>
+                <div class="absolute -bottom-6 -left-6 glass-effect p-4 rounded-2xl shadow-xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center text-green-400">
+                            <!-- Sparkles Icon -->
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
+                                <path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium">技術領域</p>
+                            <p class="text-sm font-bold text-white">Gemini AI 整合應用</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 作品展示區 -->
+    <section id="projects" class="py-24 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex justify-between items-end mb-12">
+                <div>
+                    <h2 class="text-3xl font-bold text-white mb-2">精選成品</h2>
+                    <p class="text-slate-400 text-sm">點擊下方作品即可直接在網頁中遊玩或查看內容。</p>
+                </div>
+            </div>
+
+            <!-- 嵌入式的踩地雷容器 -->
+            <div class="glass-effect rounded-3xl overflow-hidden flex flex-col lg:flex-row shadow-2xl border border-slate-700/50">
+                <div class="lg:w-2/3 bg-black/40 p-4">
+                    <!-- 使用 iframe 呼叫同目錄下的 minesweeper.html -->
+                    <div class="relative w-full aspect-[4/3] lg:h-[620px] rounded-xl overflow-hidden shadow-inner">
+                        <iframe src="minesweeper.html" class="absolute inset-0 w-full h-full border-none" title="AI Minesweeper"></iframe>
+                    </div>
+                </div>
+                <div class="lg:w-1/3 p-10 flex flex-col justify-between">
+                    <div>
+                        <div class="flex gap-2 mb-4">
+                            <span class="text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">Game Dev</span>
+                            <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-400 px-3 py-1 rounded-full border border-purple-500/20">Gemini AI</span>
+                        </div>
+                        <h3 class="text-3xl font-extrabold text-white mb-4">掃地雷</h3>
+                        <p class="text-slate-400 mb-8 leading-relaxed">
+                            這不僅僅是掃地雷。增加了流流暢的波浪擴散動畫及最終的版面確認。
+                        </p>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-start gap-3">
+                                <div class="mt-1 text-blue-500">
+                                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <path d="m9 12 2 2 4-4"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white">「首點不敗」安全機制</h4>
+                                    <p class="text-xs text-slate-500 font-normal">遊戲會在您進行第一次點擊後，才自動避開該位置及其周圍九格來生成地雷，保證第一步絕對安全。。</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="mt-1 text-purple-500">
+                                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white">直覺的「查看版面」與全域滑鼠右鍵快速返回：</h4>
+                                    <p class="text-xs text-slate-500 font-normal">遊戲結束時提供了「查看版面」功能，能暫時隱藏結算視窗並降低遮罩透明度，方便您檢視地雷的分佈。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-slate-800/80 mt-8 flex items-center justify-between">
+                        <span class="text-xs text-slate-500 font-mono">Last Updated: 2026.06</span>
+                        <div class="flex gap-2 text-slate-400">
+                            <!-- HTML5 Icon (SVG) -->
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 2l1.5 17L12 22l6.5-3L20 2H4z"></path>
+                                <path d="M12 15.5L7.5 14l-.3-3.5h7.6L14.5 12"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="glass-effect rounded-3xl overflow-hidden flex flex-col lg:flex-row-reverse shadow-2xl border border-slate-700/50 mt-16">
+    <div class="lg:w-2/3 bg-black/40 p-4">
+        <div class="relative w-full aspect-[4/3] lg:h-[620px] rounded-xl overflow-hidden shadow-inner">
+            <iframe src="art/index.html" class="absolute inset-0 w-full h-full border-none" title="SketchWall"></iframe>
+        </div>
+    </div>
+    <div class="lg:w-1/3 p-10 flex flex-col justify-between">
+        <div>
+            <div class="flex gap-2 mb-4">
+                <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 px-3 py-1 rounded-full border border-amber-500/20">Web App</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider bg-green-500/10 text-green-400 px-3 py-1 rounded-full border border-green-500/20">Creative</span>
+            </div>
+            <h3 class="text-3xl font-extrabold text-white mb-4">SketchWall 線上當代藝術牆</h3>
+            <p class="text-slate-400 mb-8 leading-relaxed">
+                這是一個供使用者自由揮灑靈感的數位畫布。具備流暢的繪圖體驗與歷史創作收藏功能，點擊作品卡片即可進行查看、編輯、刪除與下載。
+            </p>
+            
+            <div class="space-y-4">
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-amber-400">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-white">無限數位畫布</h4>
+                        <p class="text-xs text-slate-500 font-normal">提供直覺、絲滑的線上繪圖與美學編輯工具。</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 text-green-400">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-white">作品管理與下載</h4>
+                        <p class="text-xs text-slate-500 font-normal">支援將個人創作永久收藏，並能隨時下載導出至本機。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-6 border-t border-slate-800/80 mt-8 flex items-center justify-between">
+            <span class="text-xs text-slate-500 font-mono">Last Updated: 2026.06</span>
+            <div class="flex gap-2 text-slate-400">
+                <span class="text-xs bg-slate-800 px-2 py-1 rounded">Vite</span>
+                <span class="text-xs bg-slate-800 px-2 py-1 rounded">JS</span>
+            </div>
+        </div>
+    </div>
+</div>
+    </section>
+
+    <!-- 頁尾聯絡資訊區 -->
+    <footer id="contact" class="py-24 px-6 border-t border-slate-900 glass-effect">
+        <div class="max-w-6xl mx-auto text-center">
+            <h2 class="text-3xl font-bold text-white mb-8">準備好聯繫我了嗎？</h2>
+            <p class="text-slate-400 mb-12 max-w-md mx-auto">
+                歡迎透過以下平台與我交流，或是查看我的程式碼倉庫與影片頻道！
+            </p>
+            
+            <!-- 底部聯絡按鈕群 (100% 穩定的內聯 SVG 向量圖標) -->
+            <div class="flex justify-center gap-8 mb-16">
+                <!-- Mail -->
+                <a href="mailto:4b2g0057@office.stust.edu.tw" title="發送郵件" class="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center hover:bg-blue-600 transition duration-300 shadow-lg group">
+                    <svg class="w-6 h-6 text-white group-hover:scale-110 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                    </svg>
+                </a>
+                <!-- GitHub -->
+                <a href="https://github.com/shon0057" target="_blank" title="GitHub" class="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition duration-300 shadow-lg group">
+                    <svg class="w-6 h-6 text-white group-hover:scale-110 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path>
+                        <path d="M9 18c-4.51 2-5-2-7-2"></path>
+                    </svg>
+                </a>
+                <!-- YouTube -->
+                <a href="https://youtube.com/channel/UCmaDRwH7_G8uvwJQyQ9G3eQ?si=j93ntuV9p2vd7bJ8" target="_blank" title="YouTube" class="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center hover:bg-red-600 transition duration-300 shadow-lg group">
+                    <svg class="w-6 h-6 text-white group-hover:scale-110 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17z"></path>
+                        <polygon points="10 15 15 12 10 9"></polygon>
+                    </svg>
+                </a>
+            </div>
+            
+            <p class="text-slate-600 text-xs tracking-widest uppercase">
+                &copy; 2026 [陳正恩] Portfolio. Powered by Gemini AI.
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
