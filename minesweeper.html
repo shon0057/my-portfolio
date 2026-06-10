@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>掃地雷 - 右鍵返回功能</title>
+    <title>掃地雷 - 雲端同步版</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <style>
         :root {
             --bg-color: #94a3b8;
@@ -34,6 +36,23 @@
             box-shadow: var(--shadow);
             user-select: none;
             position: relative;
+            transform-origin: center center;
+            transition: transform 0.2s ease;
+        }
+
+        @media (max-width: 480px) {
+            .game-card {
+                padding: 12px;
+                border-radius: 12px;
+                transform: scale(clamp(0.65, calc(100vw / 440), 0.95));
+            }
+        }
+
+        @media (max-width: 340px) {
+            .game-card {
+                padding: 8px;
+                transform: scale(0.65) !important;
+            }
         }
 
         .header {
@@ -55,16 +74,24 @@
             gap: 15px;
         }
 
-        .mine-count {
-            color: var(--accent-red);
+        .display-box {
             font-weight: bold;
             font-family: monospace;
             font-size: 24px;
-            background: #fee2e2;
             padding: 4px 12px;
             border-radius: 8px;
             min-width: 40px;
             text-align: center;
+        }
+
+        .mine-count {
+            color: var(--accent-red);
+            background: #fee2e2;
+        }
+
+        .timer-count {
+            color: #059669;
+            background: #d1fae5;
         }
 
         .reset-btn {
@@ -133,11 +160,10 @@
             transition: background 0.3s ease;
         }
 
-        /* 查看版面模式的樣式 */
         .overlay.view-mode {
             background: rgba(15, 23, 42, 0.1);
             backdrop-filter: none;
-            cursor: alias; /* 提示使用者可以點擊 */
+            cursor: pointer;
         }
 
         .modal {
@@ -186,7 +212,6 @@
             cursor: pointer;
         }
 
-        /* 提示文字 */
         #view-hint {
             position: absolute;
             bottom: 20px;
@@ -211,28 +236,75 @@
 
     <div class="game-card">
         <div class="header">
-            <div class="title">掃地雷</div>
+            <div class="title" id="game-title">掃地雷</div>
             <div class="status-panel">
-                <div id="mines-left" class="mine-count">10</div>
+                <div id="timer" class="display-box timer-count">000</div>
+                <div id="mines-left" class="display-box mine-count">12</div>
                 <button class="reset-btn" id="reset-btn">重設</button>
             </div>
         </div>
         <div class="grid" id="grid"></div>
     </div>
 
-    <div class="overlay" id="overlay">
-        <div class="modal">
+    <div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+        <div class="modal" onclick="event.stopPropagation()">
             <h1 id="result-title" style="margin:0 0 10px 0"></h1>
             <p id="result-desc" style="color: #64748b; margin-bottom: 25px"></p>
             <div class="btn-group">
                 <button class="primary-btn" onclick="initGame()">再玩一局</button>
-                <button class="secondary-btn" onclick="toggleViewMode()">查看版面</button>
+                <button class="secondary-btn" onclick="toggleViewMode(event)">查看版面</button>
             </div>
         </div>
-        <div id="view-hint">點擊右鍵返回結果畫面</div>
+        <div id="view-hint">點擊任意鍵或右鍵返回結果畫面</div>
     </div>
 
     <script>
+        // --- ☁️ 你的跨視窗 Firebase 登入狀態同步區 ---
+        let currentUser = null;
+        let db = null; 
+
+        // 確保如果主網頁有初始化過 db，這裡可以共用，或者請確保你在這裏也調用了 firebase.firestore()
+        try {
+            if (firebase && firebase.apps.length > 0) {
+                db = firebase.firestore();
+            }
+        } catch(e) {
+            console.log("Firebase 尚未完全初始化，等待外部注入。");
+        }
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'AUTH_CHANGE') {
+                currentUser = event.data.user;
+                const titleEl = document.getElementById('game-title');
+                if (currentUser) {
+                    console.log(`遊戲已同步登入：${currentUser.displayName}`);
+                    titleEl.textContent = `掃地雷 (${currentUser.displayName})`;
+                    if (typeof loadLeaderboard === 'function') loadLeaderboard(); 
+                } else {
+                    titleEl.textContent = `掃地雷`;
+                }
+            }
+        });
+
+        function gameWin(secondsSpent) {
+            if (currentUser && db) {
+                console.log(`過關！正在上傳分數：${secondsSpent} 秒`);
+                // 上傳到 Firebase Firestore 的 leaderboard 集合
+                db.collection("leaderboard").doc(currentUser.uid).set({
+                    name: currentUser.displayName || "匿名玩家",
+                    score: secondsSpent, 
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true }).then(() => {
+                    console.log("分數上傳成功！");
+                }).catch(err => {
+                    console.error("分數上傳失敗:", err);
+                });
+            } else {
+                console.log("未登入或資料庫未就緒，不進行雲端存檔。");
+            }
+        }
+
+        // --- 🎮 遊戲核心邏輯區 ---
         const SIZE = 10;
         const MINES = 12;
         let board = [];
@@ -240,19 +312,32 @@
         let isGameOver = false;
         let isFirstClick = true;
         let flags = new Set();
+        let gameId = 0; 
+
+        // 計時器相關變數
+        let timerInterval = null;
+        let timeElapsed = 0;
 
         const gridEl = document.getElementById('grid');
         const mineDisplay = document.getElementById('mines-left');
+        const timerDisplay = document.getElementById('timer');
         const overlay = document.getElementById('overlay');
         const resultTitle = document.getElementById('result-title');
         const resultDesc = document.getElementById('result-desc');
 
         function initGame() {
+            gameId++; 
             board = [];
             revealedCount = 0;
             isGameOver = false;
             isFirstClick = true;
             flags.clear();
+            
+            // 重設計時器
+            stopTimer();
+            timeElapsed = 0;
+            timerDisplay.textContent = "000";
+
             overlay.style.display = 'none';
             overlay.classList.remove('view-mode');
             mineDisplay.textContent = MINES;
@@ -265,13 +350,49 @@
                     const cell = document.createElement('div');
                     cell.className = 'cell';
                     cell.id = `cell-${r}-${c}`;
-                    cell.onclick = () => handleLeftClick(r, c);
+                    
+                    cell.onclick = () => {
+                        if (isGameOver) return;
+                        handleLeftClick(r, c);
+                    };
+
                     cell.oncontextmenu = (e) => { 
                         e.preventDefault(); 
+                        if (isGameOver) return;
                         handleRightClick(r, c); 
                     };
+
+                    let touchTimeout;
+                    cell.addEventListener('touchstart', () => {
+                        if (isGameOver) return;
+                        touchTimeout = setTimeout(() => {
+                            handleRightClick(r, c);
+                            if (navigator.vibrate) navigator.vibrate(50);
+                        }, 600);
+                    }, { passive: true });
+
+                    cell.addEventListener('touchend', () => clearTimeout(touchTimeout));
+                    cell.addEventListener('touchmove', () => clearTimeout(touchTimeout));
+
                     gridEl.appendChild(cell);
                 }
+            }
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeElapsed++;
+                if (timeElapsed <= 999) {
+                    timerDisplay.textContent = String(timeElapsed).padStart(3, '0');
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
             }
         }
 
@@ -325,25 +446,28 @@
             if (isFirstClick) {
                 isFirstClick = false;
                 generateMines(r, c);
+                startTimer(); // 第一下點擊後正式啟動計時
             }
 
             if (board[r][c].isMine) {
                 triggerGameOver(false);
             } else {
-                revealRecursive(r, c, 0);
+                revealRecursive(r, c, 0, gameId);
             }
         }
 
-        function revealRecursive(r, c, depth) {
-            if (isGameOver || board[r][c].revealed || board[r][c].flagged) return;
+        function revealRecursive(r, c, depth, currentId) {
+            if (currentId !== gameId || isGameOver || board[r][c].revealed || board[r][c].flagged) return;
 
             board[r][c].revealed = true;
             revealedCount++;
 
             setTimeout(() => {
+                if (currentId !== gameId) return; 
                 if (isGameOver && !board[r][c].isMine) return;
 
                 const el = document.getElementById(`cell-${r}-${c}`);
+                if (!el) return;
                 el.classList.add('revealed');
                 
                 if (board[r][c].count > 0) {
@@ -358,19 +482,13 @@
 
             if (board[r][c].count === 0) {
                 getNeighbors(r, c).forEach(n => {
-                    revealRecursive(n.r, n.c, depth + 1);
+                    revealRecursive(n.r, n.c, depth + 1, currentId);
                 });
             }
         }
 
         function handleRightClick(r, c) {
-            // 如果遊戲結束且在查看模式，右鍵點擊任何地方都會返回
-            if (isGameOver && overlay.classList.contains('view-mode')) {
-                toggleViewMode();
-                return;
-            }
-
-            if (isGameOver || board[r][c].revealed) return;
+            if (board[r][c].revealed) return;
 
             const el = document.getElementById(`cell-${r}-${c}`);
             if (!board[r][c].flagged) {
@@ -388,33 +506,45 @@
         function triggerGameOver(win) {
             if (isGameOver) return;
             isGameOver = true;
+            stopTimer(); // 遊戲結束（輸或贏）立刻暫停計時
 
             if (!win) {
                 for (let r = 0; r < SIZE; r++) {
                     for (let c = 0; c < SIZE; c++) {
                         if (board[r][c].isMine) {
                             const el = document.getElementById(`cell-${r}-${c}`);
+                            const currentId = gameId;
                             setTimeout(() => {
+                                if (currentId !== gameId) return;
                                 el.classList.add('revealed', 'mine');
                                 el.textContent = '💣';
                             }, Math.random() * 400); 
                         }
                     }
                 }
+            } else {
+                // 如果是勝利，呼叫分數上傳機制
+                gameWin(timeElapsed);
             }
 
             setTimeout(() => {
                 resultTitle.textContent = win ? "🎉 任務達成" : "💀 遊戲結束";
-                resultDesc.textContent = win ? "你完美的避開了所有地雷！" : "踩到地雷了，下次再加油。";
+                resultDesc.textContent = win ? `你完美避開地雷！耗時 ${timeElapsed} 秒。` : "踩到地雷了，下次再加油。";
                 overlay.style.display = 'flex';
             }, 800);
         }
 
-        function toggleViewMode() {
+        function toggleViewMode(e) {
+            if(e) e.stopPropagation();
             overlay.classList.toggle('view-mode');
         }
 
-        // 全域右鍵事件監聽，用於查看模式返回
+        function handleOverlayClick() {
+            if (isGameOver && overlay.classList.contains('view-mode')) {
+                toggleViewMode();
+            }
+        }
+
         overlay.addEventListener('contextmenu', (e) => {
             if (isGameOver && overlay.classList.contains('view-mode')) {
                 e.preventDefault();
