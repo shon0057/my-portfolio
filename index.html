@@ -306,7 +306,6 @@
         // ----------------------------------------------------
         // 🔥 Firebase 配置與初始化區塊
         // ----------------------------------------------------
-        // 💡 回家後去 Firebase Console 建立專案後，把你的 Config 貼到這裡覆蓋：
         const firebaseConfig = {
             apiKey: "AIzaSyB6_TjyUdF0EsR3reZeObF57JgUEe4gGLQ",
             authDomain: "my-portfolio-db-57c9b.firebaseapp.com",
@@ -317,7 +316,6 @@
             measurementId: "G-GT57T3FH1T"
           };
         
-        // 防止未替換 Key 之前報錯，做個簡單安全防護
         if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
             firebase.initializeApp(firebaseConfig);
         }
@@ -358,6 +356,19 @@
                 }
             }
 
+            // 🚀 新增：監聽從 Google 頁面跳轉回來的認證結果
+            if (auth) {
+                auth.getRedirectResult()
+                    .then((result) => {
+                        if (result.user) {
+                            console.log("Google 跳轉驗證成功:", result.user.displayName);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("跳轉驗證失敗:", error.message);
+                    });
+            }
+
             // 監聽 Firebase 登入狀態轉變
             if (auth) {
                 auth.onAuthStateChanged((user) => {
@@ -372,21 +383,20 @@
                         authBtnLogin.classList.remove('hidden');
                         authUserInfo.classList.add('hidden');
                     }
-                    // 當 iframe 載入完成或狀態更新時，將狀態通知內部專案
+                    // 當狀態更新時，同步將狀態通知內部專案
                     broadcastAuthStatus(user);
                 });
             }
 
-            // 點擊 Google 登入
+            // 🚀 修正：將原本的 signInWithPopup 改成 100% 免疫閃退的 signInWithRedirect
             if (authBtnLogin) {
                 authBtnLogin.addEventListener('click', () => {
                     if (!auth) {
-                        alert("💡 請先至 index.html 第 233 行填入您的 Firebase Config 密鑰資訊喔！");
+                        alert("💡 請先確認 Firebase 配置喔！");
                         return;
                     }
                     const provider = new firebase.auth.GoogleAuthProvider();
-                    auth.signInWithPopup(provider)
-                        .catch((error) => console.error("登入失敗:", error));
+                    auth.signInWithRedirect(provider); // 頁面直接跳轉 Google，徹底解決 iframe 內安全鎖定問題
                 });
             }
 
