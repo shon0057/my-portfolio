@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>掃地雷 - 雲端同步版</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
         :root {
             --bg-color: #94a3b8;
@@ -26,243 +26,276 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            overflow: hidden;
+            user-select: none;
         }
 
-        .game-card {
+        .game-container {
             background-color: var(--card-bg);
             padding: 24px;
             border-radius: 16px;
             box-shadow: var(--shadow);
-            user-select: none;
-            position: relative;
-            transform-origin: center center;
-            transition: transform 0.2s ease;
+            text-align: center;
+            max-width: 450px;
+            width: 100%;
         }
 
-        @media (max-width: 480px) {
-            .game-card {
-                padding: 12px;
-                border-radius: 12px;
-                transform: scale(clamp(0.65, calc(100vw / 440), 0.95));
-            }
+        h1 {
+            font-size: 1.5rem;
+            color: var(--text-main);
+            margin: 0 0 16px 0;
         }
 
-        @media (max-width: 340px) {
-            .game-card {
-                padding: 8px;
-                transform: scale(0.65) !important;
-            }
-        }
-
-        .header {
+        .status-bar {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .title {
-            font-size: 20px;
-            font-weight: bold;
-            color: var(--text-main);
-        }
-
-        .status-panel {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .display-box {
-            font-weight: bold;
-            font-family: monospace;
-            font-size: 24px;
-            padding: 4px 12px;
-            border-radius: 8px;
-            min-width: 40px;
-            text-align: center;
-        }
-
-        .mine-count {
-            color: var(--accent-red);
-            background: #fee2e2;
-        }
-
-        .timer-count {
-            color: #059669;
-            background: #d1fae5;
-        }
-
-        .reset-btn {
             background-color: #f1f5f9;
-            border: 1px solid #cbd5e1;
             padding: 8px 16px;
             border-radius: 8px;
-            cursor: pointer;
+            margin-bottom: 16px;
             font-weight: bold;
-            transition: all 0.2s;
+            color: #475569;
         }
-
-        .reset-btn:hover { background-color: #e2e8f0; transform: translateY(-1px); }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(10, 38px);
-            grid-template-rows: repeat(10, 38px);
+            grid-template-columns: repeat(10, 32px);
+            grid-template-rows: repeat(10, 32px);
             gap: 2px;
             background-color: var(--cell-border);
-            border: 3px solid var(--cell-border);
-            border-radius: 4px;
+            padding: 2px;
+            border-radius: 6px;
+            margin: 0 auto 16px auto;
+            width: max-content;
         }
 
         .cell {
-            width: 38px;
-            height: 38px;
             background-color: var(--cell-unrevealed);
+            border-radius: 2px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-weight: 900;
+            font-weight: bold;
+            font-size: 14px;
             cursor: pointer;
-            font-size: 18px;
-            box-shadow: inset 1px 1px 0 white, inset -1px -1px 0 rgba(0,0,0,0.1);
+            transition: background-color 0.1s;
         }
 
-        @keyframes pop {
-            0% { transform: scale(0.6); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        .cell:hover:not(.revealed) {
+            background-color: #cbd5e1;
         }
 
         .cell.revealed {
             background-color: var(--cell-revealed);
             cursor: default;
-            animation: pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
-        .cell.mine { background-color: #fca5a5 !important; }
-        .cell.flagged::after { content: "🚩"; font-size: 18px; }
+        .cell.mine {
+            background-color: #fecaca;
+        }
 
-        .n1 { color: #2563eb; }
-        .n2 { color: #16a34a; }
-        .n3 { color: #dc2626; }
-        .n4 { color: #1e3a8a; }
+        .cell.flag {
+            background-color: #fef08a;
+        }
 
+        /* 數字顏色 */
+        .cell[data-count="1"] { color: #2563eb; }
+        .cell[data-count="2"] { color: #16a34a; }
+        .cell[data-count="3"] { color: #dc2626; }
+        .cell[data-count="4"] { color: #7c3aed; }
+        .cell[data-count="5"] { color: #9a3412; }
+        .cell[data-count="6"] { color: #0891b2; }
+        .cell[data-count="7"] { color: #1e293b; }
+        .cell[data-count="8"] { color: #64748b; }
+
+        .btn {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        /* 彈出視窗樣式優化 */
         .overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.7);
+            background-color: rgba(15, 23, 42, 0.75);
             backdrop-filter: blur(4px);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 100;
-            transition: background 0.3s ease;
         }
 
-        .overlay.view-mode {
-            background: rgba(15, 23, 42, 0.1);
-            backdrop-filter: none;
-            cursor: pointer;
-        }
-
-        .modal {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
+        .result-box {
+            background-color: white;
+            padding: 24px;
+            border-radius: 16px;
             text-align: center;
-            box-shadow: var(--shadow);
-            max-width: 320px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+            max-width: 380px;
             width: 90%;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            pointer-events: auto;
+            animation: popIn 0.3s ease-out;
         }
 
-        .overlay.view-mode .modal {
-            opacity: 0;
-            pointer-events: none;
-            transform: scale(0.9);
+        @keyframes popIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
 
-        .btn-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .result-box h2 {
+            margin: 0 0 8px 0;
+            font-size: 1.5rem;
+            color: var(--text-main);
         }
 
-        .primary-btn {
-            background: #1e293b;
-            color: white;
-            width: 100%;
+        .result-box p {
+            color: #64748b;
+            margin: 0 0 16px 0;
+            font-size: 0.95rem;
+        }
+
+        /* 🖥️ 排行榜表格樣式 */
+        .leaderboard-section {
+            margin: 16px 0;
+            background: #f8fafc;
+            border-radius: 12px;
             padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
+            border: 1px solid #e2e8f0;
+            max-height: 200px;
+            overflow-y: auto;
         }
 
-        .secondary-btn {
-            background: #f1f5f9;
+        .leaderboard-title {
+            font-size: 0.9rem;
+            font-weight: bold;
             color: #475569;
+            margin-bottom: 8px;
+            text-align: left;
+            border-left: 4px solid #2563eb;
+            padding-left: 6px;
+        }
+
+        .leaderboard-table {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .leaderboard-table th {
+            color: #64748b;
+            font-weight: 600;
+            padding: 4px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        .leaderboard-table td {
+            padding: 6px 4px;
+            vertical-align: middle;
+            text-align: left;
+            color: #334155;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .player-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            object-fit: cover;
+        }
+
+        .rank-badge {
             font-weight: bold;
-            cursor: pointer;
+            width: 18px;
+            display: inline-block;
+            text-align: center;
+        }
+        .rank-1 { color: #eab308; } /* 金 */
+        .rank-2 { color: #94a3b8; } /* 銀 */
+        .rank-3 { color: #b45309; } /* 銅 */
+
+        .view-mode-btn {
+            background-color: #64748b;
+            margin-right: 8px;
+        }
+        .view-mode-btn:hover {
+            background-color: #475569;
         }
 
-        #view-hint {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.6);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            display: none;
+        /* 殘局檢視模式 */
+        .overlay.view-mode {
+            background-color: transparent;
+            backdrop-filter: none;
             pointer-events: none;
-            z-index: 102;
         }
-
-        .overlay.view-mode #view-hint {
-            display: block;
+        .overlay.view-mode .result-box {
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <div class="game-card">
-        <div class="header">
-            <div class="title" id="game-title">掃地雷</div>
-            <div class="status-panel">
-                <div id="timer" class="display-box timer-count">000</div>
-                <div id="mines-left" class="display-box mine-count">12</div>
-                <button class="reset-btn" id="reset-btn">重設</button>
-            </div>
+    <div class="game-container">
+        <h1 id="game-title">💣 掃地雷 - 雲端同步版</h1>
+        
+        <div class="status-bar">
+            <div>🚩 剩餘地雷: <span id="mine-count">10</span></div>
+            <div>⏱️ 耗時: <span id="timer">000</span> 秒</div>
         </div>
+
         <div class="grid" id="grid"></div>
+
+        <button class="btn" id="reset-btn">重新開始</button>
     </div>
 
-    <div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
-        <div class="modal" onclick="event.stopPropagation()">
-            <h1 id="result-title" style="margin:0 0 10px 0"></h1>
-            <p id="result-desc" style="color: #64748b; margin-bottom: 25px"></p>
-            <div class="btn-group">
-                <button class="primary-btn" onclick="initGame()">再玩一局</button>
-                <button class="secondary-btn" onclick="toggleViewMode(event)">查看版面</button>
+    <div class="overlay" id="overlay" onclick="handleOverlayClick()">
+        <div class="result-box" onclick="event.stopPropagation()">
+            <h2 id="result-title">🎉 任務達成</h2>
+            <p id="result-desc">你完美避開了所有地雷！</p>
+            
+            <div class="leaderboard-section">
+                <div class="leaderboard-title">🏆 雲端同步世界天梯榜 (前5名)</div>
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%">名次</th>
+                            <th style="width: 55%">玩家</th>
+                            <th style="width: 30%; text-align: right;">成績 (秒)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body">
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #94a3b8; padding: 10px;">排行榜讀取中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: center;">
+                <button class="btn view-mode-btn" onclick="toggleViewMode(event)">🔍 查看殘局</button>
+                <button class="btn" onclick="initGame()">再玩一局</button>
             </div>
         </div>
-        <div id="view-hint">點擊任意鍵或右鍵返回結果畫面</div>
     </div>
+
     <script>
-// ----------------------------------------------------
-        // 🔐 全域使用者變數 與 跨網域通訊監聽
         // ----------------------------------------------------
-        // ----------------------------------------------------
-        // 🔥 Firebase Config 設定（iframe 內部也必須獨立初始化）
+        // 🔥 Firebase Config 初始化配置
         // ----------------------------------------------------
         const firebaseConfig = {
             apiKey: "AIzaSyB6_TjyUdF0EsR3reZeObF57JgUEe4gGLQ",
@@ -274,35 +307,30 @@
             measurementId: "G-GT57T3FH1T"
         };
 
-        // 確保遊戲內部只初始化一次，並成功建立 db 連線
         let db = null;
         if (typeof firebase !== 'undefined') {
             if (firebase.apps.length === 0) {
                 firebase.initializeApp(firebaseConfig);
             }
-            db = firebase.firestore(); // 🚀 這行成功，db 就不再是 null 了！
+            db = firebase.firestore();
             console.log("【遊戲內部】Firebase Firestore 初始化成功！");
         } else {
-            console.error("【遊戲內部】找不到 Firebase SDK，請確認網頁頂部有引入 script。");
+            console.error("【遊戲內部】找不到 Firebase SDK，請確認頂部有引入 script。");
         }
 
         // ----------------------------------------------------
-        // 🔐 跨網域通訊監聽：接收主網頁傳來的登入狀態
+        // 🔐 跨網域通訊監聽：接收來自 index.html 的登入狀態
         // ----------------------------------------------------
-        let currentUser = null; 
+        let currentUser = null;
 
         window.addEventListener('message', (event) => {
             if (!event.data) return;
-
-            // 支援主網頁發出的兩種事件 type
             if (event.data.type === 'AUTH_CHANGE' || event.data.type === 'PORTFOLIO_AUTH_STATE') {
-                currentUser = event.data.user; 
-                
-                // 動態在遊戲內政更新玩家暱稱提示
-                const gameTitle = document.querySelector('h1') || document.getElementById('game-title');
+                currentUser = event.data.user;
+                const gameTitle = document.getElementById('game-title');
                 if (gameTitle) {
                     if (currentUser) {
-                        gameTitle.textContent = `💣 掃地雷 (玩家: ${currentUser.displayName || '已連動'})`;
+                        gameTitle.textContent = `💣 掃地雷 (玩家: ${currentUser.displayName || '已登入'})`;
                         console.log("【遊戲內部】成功接收主網頁登入狀態:", currentUser.displayName);
                     } else {
                         gameTitle.textContent = "💣 掃地雷 - 雲端同步版";
@@ -313,134 +341,39 @@
         });
 
         // ----------------------------------------------------
-        // 🏆 遊戲勝利：分數雲端同步
+        // 🎮 遊戲核心邏輯變數
         // ----------------------------------------------------
-        // ----------------------------------------------------
-        // 🏆 遊戲勝利：分數雲端同步
-        // ----------------------------------------------------
-        function gameWin(finalTime) {
-            // 🚀 修正：安全地清除全域計時器 timerInterval
-            if (typeof stopTimer === 'function') {
-                stopTimer();
-            } else if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            isGameOver = true;
-            
-            console.log("🎉 遊戲勝利！花費秒數:", finalTime);
-
-            // 1. 檢查有沒有登入資料
-            if (!currentUser) {
-                console.log("💡 目前為訪客身分，過關分數不會上傳至雲端天梯榜。");
-                return; 
-            }
-
-            // 2. 檢查資料庫連線實例是否存在
-            if (!db) {
-                console.error("❌ 錯誤：Firestore 資料庫 (db) 尚未初始化成功，無法上傳分數！");
-                return;
-            }
-
-            console.log("🚀 正在將分數寫入 Firebase Firestore...");
-            
-            // 3. 安全地寫入 Firestore
-            db.collection('minesweeper_scores').add({
-                uid: currentUser.uid,
-                name: currentUser.displayName || '匿名玩家',
-                photoURL: currentUser.photoURL || '',
-                score: Number(finalTime), // 確保存入的是數字
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            })
-            .then(() => {
-                console.log("✅ 【雲端同步】分數已成功寫入 minesweeper_scores 集合！");
-            })
-            .catch((error) => {
-                console.error("❌ 分數上傳失敗，請檢查 Firebase Database 的 Rules 規則:", error.message);
-            });
-        }
-
-        // --- 🎮 遊戲核心邏輯區 ---
         const SIZE = 10;
-        const MINES = 12;
+        const MINE_NUM = 10;
         let board = [];
+        let mines = new Set();
+        let flags = new Set();
         let revealedCount = 0;
         let isGameOver = false;
         let isFirstClick = true;
-        let flags = new Set();
-        let gameId = 0; 
+        let gameId = 0;
 
         let timerInterval = null;
         let timeElapsed = 0;
 
         const gridEl = document.getElementById('grid');
-        const mineDisplay = document.getElementById('mines-left');
-        const timerDisplay = document.getElementById('timer');
+        const mineCountEl = document.getElementById('mine-count');
+        const timerEl = document.getElementById('timer');
         const overlay = document.getElementById('overlay');
         const resultTitle = document.getElementById('result-title');
         const resultDesc = document.getElementById('result-desc');
 
-        function initGame() {
-            gameId++; 
-            board = [];
-            revealedCount = 0;
-            isGameOver = false;
-            isFirstClick = true;
-            flags.clear();
-            
-            stopTimer();
-            timeElapsed = 0;
-            timerDisplay.textContent = "000";
-
-            overlay.style.display = 'none';
-            overlay.classList.remove('view-mode');
-            gridEl.style.pointerEvents = 'auto'; // 恢復網格可點擊狀態
-            mineDisplay.textContent = MINES;
-            gridEl.innerHTML = '';
-
-            for (let r = 0; r < SIZE; r++) {
-                board[r] = [];
-                for (let c = 0; c < SIZE; c++) {
-                    board[r][c] = { r, c, isMine: false, revealed: false, flagged: false, count: 0 };
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.id = `cell-${r}-${c}`;
-                    
-                    cell.onclick = () => {
-                        if (isGameOver) return;
-                        handleLeftClick(r, c);
-                    };
-
-                    cell.oncontextmenu = (e) => { 
-                        e.preventDefault(); 
-                        if (isGameOver) return;
-                        handleRightClick(r, c); 
-                    };
-
-                    let touchTimeout;
-                    cell.addEventListener('touchstart', () => {
-                        if (isGameOver) return;
-                        touchTimeout = setTimeout(() => {
-                            handleRightClick(r, c);
-                            if (navigator.vibrate) navigator.vibrate(50);
-                        }, 600);
-                    }, { passive: true });
-
-                    cell.addEventListener('touchend', () => clearTimeout(touchTimeout));
-                    cell.addEventListener('touchmove', () => clearTimeout(touchTimeout));
-
-                    gridEl.appendChild(cell);
-                }
-            }
-        }
-
+        // ----------------------------------------------------
+        // ⏱️ 計時器機制
+        // ----------------------------------------------------
         function startTimer() {
             if (timerInterval) clearInterval(timerInterval);
+            timeElapsed = 0;
+            timerEl.textContent = "000";
             timerInterval = setInterval(() => {
                 timeElapsed++;
-                if (timeElapsed <= 999) {
-                    timerDisplay.textContent = String(timeElapsed).padStart(3, '0');
-                }
+                if (timeElapsed > 999) timeElapsed = 999;
+                timerEl.textContent = String(timeElapsed).padStart(3, '0');
             }, 1000);
         }
 
@@ -451,52 +384,88 @@
             }
         }
 
-        function generateMines(firstR, firstC) {
-            let placed = 0;
-            const safeZone = new Set();
-            for (let dr = -1; dr <= 1; dr++) {
-                for (let dc = -1; dc <= 1; dc++) {
-                    safeZone.add(`${firstR + dr},${firstC + dc}`);
+        // ----------------------------------------------------
+        // 🛠️ 遊戲初始化
+        // ----------------------------------------------------
+        function initGame() {
+            gameId++;
+            stopTimer();
+            timeElapsed = 0;
+            timerEl.textContent = "000";
+            
+            isGameOver = false;
+            isFirstClick = true;
+            revealedCount = 0;
+            mines.clear();
+            flags.clear();
+            
+            overlay.style.display = 'none';
+            overlay.classList.remove('view-mode');
+            gridEl.style.pointerEvents = 'auto';
+            mineCountEl.textContent = MINE_NUM;
+
+            gridEl.innerHTML = '';
+            board = [];
+
+            for (let r = 0; r < SIZE; r++) {
+                board[r] = [];
+                for (let c = 0; c < SIZE; c++) {
+                    board[r][c] = {
+                        r: r, c: c,
+                        isMine: false,
+                        isRevealed: false,
+                        isFlagged: false,
+                        neighborMines: 0
+                    };
+
+                    const cellEl = document.createElement('div');
+                    cellEl.id = `cell-${r}-${c}`;
+                    cellEl.className = 'cell';
+                    
+                    cellEl.addEventListener('click', () => handleLeftClick(r, c));
+                    cellEl.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        handleRightClick(r, c);
+                    });
+
+                    gridEl.appendChild(cellEl);
                 }
             }
+        }
 
-            while (placed < MINES) {
+        // 布雷（確保第一下絕對不踩雷）
+        function generateMines(firstR, firstC) {
+            while (mines.size < MINE_NUM) {
                 let r = Math.floor(Math.random() * SIZE);
                 let c = Math.floor(Math.random() * SIZE);
-                if (!board[r][c].isMine && !safeZone.has(`${r},${c}`)) {
-                    board[r][c].isMine = true;
-                    placed++;
-                }
+                if (Math.abs(r - firstR) <= 1 && Math.abs(c - firstC) <= 1) continue;
+                mines.add(`${r},${c}`);
+                board[r][c].isMine = true;
             }
 
+            // 計算四周地雷數
             for (let r = 0; r < SIZE; r++) {
                 for (let c = 0; c < SIZE; c++) {
                     if (board[r][c].isMine) continue;
-                    let minesAround = 0;
-                    getNeighbors(r, c).forEach(n => {
-                        if (board[n.r][n.c].isMine) minesAround++;
-                    });
-                    board[r][c].count = minesAround;
-                }
-            }
-        }
-
-        function getNeighbors(r, c) {
-            const neighbors = [];
-            for (let dr = -1; dr <= 1; dr++) {
-                for (let dc = -1; dc <= 1; dc++) {
-                    if (dr === 0 && dc === 0) continue;
-                    let nr = r + dr, nc = c + dc;
-                    if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE) {
-                        neighbors.push({ r: nr, c: nc });
+                    let count = 0;
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            let nr = r + dr, nc = c + dc;
+                            if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc].isMine) {
+                                count++;
+                            }
+                        }
                     }
+                    board[r][c].neighborMines = count;
                 }
             }
-            return neighbors;
         }
 
+        // ----------------------------------------------------
+        // 👆 玩家點擊操作
+        // ----------------------------------------------------
         function handleLeftClick(r, c) {
-            if (isGameOver || board[r][c].revealed || board[r][c].flagged) return;
+            if (isGameOver || board[r][c].isRevealed || board[r][c].isFlagged) return;
 
             if (isFirstClick) {
                 isFirstClick = false;
@@ -506,69 +475,160 @@
 
             if (board[r][c].isMine) {
                 triggerGameOver(false);
-            } else {
-                revealRecursive(r, c, 0, gameId);
+                return;
             }
-        }
 
-        function revealRecursive(r, c, depth, currentId) {
-            if (currentId !== gameId || isGameOver || board[r][c].revealed || board[r][c].flagged) return;
+            revealCell(r, c);
 
-            // 【邏輯同步優化】在點擊當下立刻鎖定狀態並增加計數，不等待 setTimeout
-            board[r][c].revealed = true;
-            revealedCount++;
-
-            // 檢查是否達成勝利條件（放在同步區，避免手速過快造成 race condition）
-            const isWinTriggered = (revealedCount === (SIZE * SIZE) - MINES);
-            if (isWinTriggered) {
+            if (revealedCount === SIZE * SIZE - MINE_NUM) {
                 triggerGameOver(true);
-            }
-
-            setTimeout(() => {
-                if (currentId !== gameId) return; 
-                // 如果輸了，非地雷的格子就不再繼續播翻開動畫
-                if (isGameOver && !isWinTriggered && !board[r][c].isMine) return;
-
-                const el = document.getElementById(`cell-${r}-${c}`);
-                if (!el) return;
-                el.classList.add('revealed');
-                
-                if (board[r][c].count > 0) {
-                    el.textContent = board[r][c].count;
-                    el.classList.add(`n${board[r][c].count}`);
-                }
-            }, depth * 30);
-
-            if (board[r][c].count === 0) {
-                getNeighbors(r, c).forEach(n => {
-                    revealRecursive(n.r, n.c, depth + 1, currentId);
-                });
             }
         }
 
         function handleRightClick(r, c) {
-            // 【UX修正】遊戲結束後不允許再插旗/拔旗
-            if (isGameOver || board[r][c].revealed) return;
+            if (isGameOver || board[r][c].isRevealed) return;
 
-            const el = document.getElementById(`cell-${r}-${c}`);
-            if (!board[r][c].flagged) {
-                board[r][c].flagged = true;
-                flags.add(`${r},${c}`);
-                el.classList.add('flagged');
-            } else {
-                board[r][c].flagged = false;
+            const cellEl = document.getElementById(`cell-${r}-${c}`);
+            if (board[r][c].isFlagged) {
+                board[r][c].isFlagged = false;
                 flags.delete(`${r},${c}`);
-                el.classList.remove('flagged');
+                cellEl.classList.remove('flag');
+                cellEl.textContent = '';
+            } else {
+                if (flags.size >= MINE_NUM) return;
+                board[r][c].isFlagged = true;
+                flags.add(`${r},${c}`);
+                cellEl.classList.add('flag');
+                cellEl.textContent = '🚩';
             }
-            mineDisplay.textContent = MINES - flags.size;
+            mineCountEl.textContent = MINE_NUM - flags.size;
         }
 
+        // 遞迴翻開格子
+        function revealCell(r, c) {
+            if (r < 0 || r >= SIZE || c < 0 || c >= SIZE || board[r][c].isRevealed || board[r][c].isFlagged) return;
+
+            board[r][c].isRevealed = true;
+            revealedCount++;
+            const cellEl = document.getElementById(`cell-${r}-${c}`);
+            cellEl.classList.add('revealed');
+
+            if (board[r][c].neighborMines > 0) {
+                cellEl.textContent = board[r][c].neighborMines;
+                cellEl.setAttribute('data-count', board[r][c].neighborMines);
+            } else {
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        revealCell(r + dr, c + dc);
+                    }
+                }
+            }
+        }
+
+        // ----------------------------------------------------
+        // 🏆 遊戲勝利：分數雲端同步
+        // ----------------------------------------------------
+        function gameWin(finalTime) {
+            console.log("🎉 遊戲勝利！花費秒數:", finalTime);
+
+            if (!currentUser) {
+                console.log("💡 目前為訪客身分，分數將不儲存到雲端。");
+                return; 
+            }
+
+            if (!db) {
+                console.error("❌ 錯誤：Firestore 資料庫尚未初始化成功。");
+                return;
+            }
+
+            console.log("🚀 正在將分數寫入 Firebase Firestore...");
+            db.collection('minesweeper_scores').add({
+                uid: currentUser.uid,
+                name: currentUser.displayName || '匿名玩家',
+                photoURL: currentUser.photoURL || '',
+                score: Number(finalTime), 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                console.log("✅ 【雲端同步】分數已成功寫入！");
+                // 上傳成功後，即時刷新排行榜
+                loadLeaderboard();
+            })
+            .catch((error) => {
+                console.error("❌ 分數上傳失敗:", error.message);
+            });
+        }
+
+        // ----------------------------------------------------
+        // 📊 讀取並渲染雲端排行榜
+        // ----------------------------------------------------
+        function loadLeaderboard() {
+            const tbody = document.getElementById('leaderboard-body');
+            if (!tbody) return;
+
+            if (!db) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #ef4444;">資料庫未連線</td></tr>`;
+                return;
+            }
+
+            // 查詢 minesweeper_scores 集合：依分數(秒數)從小到大排序，取前 5 名
+            db.collection('minesweeper_scores')
+                .orderBy('score', 'asc')
+                .limit(5)
+                .get()
+                .then((querySnapshot) => {
+                    tbody.innerHTML = ''; // 清空加載中文字
+                    
+                    if (querySnapshot.empty) {
+                        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8;">目前尚無高分紀錄！快來搶佔第一名！</td></tr>`;
+                        return;
+                    }
+
+                    let rank = 1;
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const score = data.score;
+                        const name = data.name || '匿名玩家';
+                        const photoURL = data.photoURL || '';
+
+                        // 判斷前三名獎牌樣式
+                        let rankClass = '';
+                        if (rank <= 3) rankClass = `rank-${rank}`;
+
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+                            <td>
+                                <div class="player-info">
+                                    <img class="player-avatar" src="${photoURL || 'https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_144dp.png'}" onerror="this.src='https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_144dp.png'">
+                                    <span style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
+                                </div>
+                            </td>
+                            <td style="text-align: right; font-weight: bold; color: #2563eb;">${score} 秒</td>
+                        `;
+                        tbody.appendChild(tr);
+                        rank++;
+                    });
+                })
+                .catch((error) => {
+                    console.error("❌ 讀取排行榜失敗:", error);
+                    tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #ef4444;">排行榜載入失敗</td></tr>`;
+                });
+        }
+
+        // ----------------------------------------------------
+        // 🏁 判定遊戲結束
+        // ----------------------------------------------------
         function triggerGameOver(win) {
             if (isGameOver) return;
             isGameOver = true;
             stopTimer(); 
 
+            // 預先載入最新排行榜（不論輸贏都顯示）
+            loadLeaderboard();
+
             if (!win) {
+                // 失敗動畫：翻開所有炸彈
                 for (let r = 0; r < SIZE; r++) {
                     for (let c = 0; c < SIZE; c++) {
                         if (board[r][c].isMine) {
@@ -583,23 +643,25 @@
                     }
                 }
             } else {
-                // 🚀 修正：明確將全域記錄的 timeElapsed 秒數代入
+                // 勝利：呼叫雲端上傳機制
                 gameWin(timeElapsed);
             }
 
+            // 彈出視窗
             setTimeout(() => {
                 resultTitle.textContent = win ? "🎉 任務達成" : "💀 遊戲結束";
-                // 🚀 修正：文字顯示也統一使用全域的 timeElapsed
                 resultDesc.textContent = win ? `你完美避開地雷！耗時 ${timeElapsed} 秒。` : "踩到地雷了，下次再加油。";
                 overlay.style.display = 'flex';
             }, 800);
         }
 
+        // ----------------------------------------------------
+        // 🔍 殘局檢視模式切換
+        // ----------------------------------------------------
         function toggleViewMode(e) {
             if(e) e.stopPropagation();
             overlay.classList.toggle('view-mode');
             
-            // 【UX優化】進入查看殘局模式時，鎖定盤面不可點擊，滑鼠指標變回預設
             if (overlay.classList.contains('view-mode')) {
                 gridEl.style.pointerEvents = 'none';
             } else {
