@@ -257,13 +257,11 @@
         </div>
         <div id="view-hint">點擊任意鍵或右鍵返回結果畫面</div>
     </div>
-
     <script>
-        // --- ☁️ 你的跨視窗 Firebase 登入狀態同步區 ---
+// --- ☁️ 你的跨視窗 Firebase 登入狀態同步區 ---
         let currentUser = null;
         let db = null; 
 
-        // 確保如果主網頁有初始化過 db，這裡可以共用，或者請確保你在這裏也調用了 firebase.firestore()
         try {
             if (firebase && firebase.apps.length > 0) {
                 db = firebase.firestore();
@@ -287,9 +285,15 @@
         });
 
         function gameWin(secondsSpent) {
+            // 【安全優化】基本防作弊：驗證上傳秒數是否與當前遊戲計時相符，且盤面確實完全解開
+            const requiredRevealed = (SIZE * SIZE) - MINES;
+            if (secondsSpent !== timeElapsed || revealedCount !== requiredRevealed) {
+                console.error("檢測到異常的分數上傳請求，已拒絕。");
+                return;
+            }
+
             if (currentUser && db) {
                 console.log(`過關！正在上傳分數：${secondsSpent} 秒`);
-                // 上傳到 Firebase Firestore 的 leaderboard 集合
                 db.collection("leaderboard").doc(currentUser.uid).set({
                     name: currentUser.displayName || "匿名玩家",
                     score: secondsSpent, 
@@ -314,7 +318,6 @@
         let flags = new Set();
         let gameId = 0; 
 
-        // 計時器相關變數
         let timerInterval = null;
         let timeElapsed = 0;
 
@@ -333,13 +336,13 @@
             isFirstClick = true;
             flags.clear();
             
-            // 重設計時器
             stopTimer();
             timeElapsed = 0;
             timerDisplay.textContent = "000";
 
             overlay.style.display = 'none';
             overlay.classList.remove('view-mode');
+            gridEl.style.pointerEvents = 'auto'; // 恢復網格可點擊狀態
             mineDisplay.textContent = MINES;
             gridEl.innerHTML = '';
 
@@ -446,7 +449,7 @@
             if (isFirstClick) {
                 isFirstClick = false;
                 generateMines(r, c);
-                startTimer(); // 第一下點擊後正式啟動計時
+                startTimer();
             }
 
             if (board[r][c].isMine) {
@@ -459,12 +462,20 @@
         function revealRecursive(r, c, depth, currentId) {
             if (currentId !== gameId || isGameOver || board[r][c].revealed || board[r][c].flagged) return;
 
+            // 【邏輯同步優化】在點擊當下立刻鎖定狀態並增加計數，不等待 setTimeout
             board[r][c].revealed = true;
             revealedCount++;
 
+            // 檢查是否達成勝利條件（放在同步區，避免手速過快造成 race condition）
+            const isWinTriggered = (revealedCount === (SIZE * SIZE) - MINES);
+            if (isWinTriggered) {
+                triggerGameOver(true);
+            }
+
             setTimeout(() => {
                 if (currentId !== gameId) return; 
-                if (isGameOver && !board[r][c].isMine) return;
+                // 如果輸了，非地雷的格子就不再繼續播翻開動畫
+                if (isGameOver && !isWinTriggered && !board[r][c].isMine) return;
 
                 const el = document.getElementById(`cell-${r}-${c}`);
                 if (!el) return;
@@ -473,10 +484,6 @@
                 if (board[r][c].count > 0) {
                     el.textContent = board[r][c].count;
                     el.classList.add(`n${board[r][c].count}`);
-                }
-
-                if (revealedCount === (SIZE * SIZE) - MINES && !isGameOver) {
-                    triggerGameOver(true);
                 }
             }, depth * 30);
 
@@ -488,7 +495,8 @@
         }
 
         function handleRightClick(r, c) {
-            if (board[r][c].revealed) return;
+            // 【UX修正】遊戲結束後不允許再插旗/拔旗
+            if (isGameOver || board[r][c].revealed) return;
 
             const el = document.getElementById(`cell-${r}-${c}`);
             if (!board[r][c].flagged) {
@@ -506,7 +514,7 @@
         function triggerGameOver(win) {
             if (isGameOver) return;
             isGameOver = true;
-            stopTimer(); // 遊戲結束（輸或贏）立刻暫停計時
+            stopTimer(); 
 
             if (!win) {
                 for (let r = 0; r < SIZE; r++) {
@@ -523,7 +531,6 @@
                     }
                 }
             } else {
-                // 如果是勝利，呼叫分數上傳機制
                 gameWin(timeElapsed);
             }
 
@@ -537,6 +544,13 @@
         function toggleViewMode(e) {
             if(e) e.stopPropagation();
             overlay.classList.toggle('view-mode');
+            
+            // 【UX優化】進入查看殘局模式時，鎖定盤面不可點擊，滑鼠指標變回預設
+            if (overlay.classList.contains('view-mode')) {
+                gridEl.style.pointerEvents = 'none';
+            } else {
+                gridEl.style.pointerEvents = 'auto';
+            }
         }
 
         function handleOverlayClick() {

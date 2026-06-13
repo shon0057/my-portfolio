@@ -304,7 +304,7 @@
 
     <script>
         // ----------------------------------------------------
-        // 🔥 Firebase 配置與初始化區塊
+        // 🔥 Firebase 配置與單一初始化
         // ----------------------------------------------------
         const firebaseConfig = {
             apiKey: "AIzaSyB6_TjyUdF0EsR3reZeObF57JgUEe4gGLQ",
@@ -314,20 +314,18 @@
             messagingSenderId: "767568010946",
             appId: "1:767568010946:web:7ceb96cc02baf2dc5fe55b",
             measurementId: "G-GT57T3FH1T"
-          };
-        
-        if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+        };
+
+        // 確保全域只初始化一次
+        if (firebase.apps.length === 0) {
             firebase.initializeApp(firebaseConfig);
         }
-        
-        const auth = firebase.auth ? firebase.auth() : null;
-        const db = firebase.firestore ? firebase.firestore() : null;
+
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
         document.addEventListener('DOMContentLoaded', () => {
-            
-            // ----------------------------------------------------
-            // 🔐 登入/登出 流程控制
-            // ----------------------------------------------------
+            // DOM 元素抓取
             const authBtnLogin = document.getElementById('authBtnLogin');
             const authBtnLogout = document.getElementById('authBtnLogout');
             const authUserInfo = document.getElementById('authUserInfo');
@@ -337,7 +335,7 @@
             const mineIframe = document.getElementById('minesweeperIframe');
             const artIframe = document.getElementById('artIframe');
 
-            // 廣播登入狀態給內嵌的 iframes (遊戲、畫布)
+            // 🔄 修正：統一發送給遊戲與畫布的密碼為 'AUTH_CHANGE'
             function broadcastAuthStatus(user) {
                 const userData = user ? {
                     uid: user.uid,
@@ -346,7 +344,7 @@
                     email: user.email
                 } : null;
 
-                const message = { type: 'PORTFOLIO_AUTH_STATE', user: userData };
+                const message = { type: 'AUTH_CHANGE', user: userData };
                 
                 if (mineIframe && mineIframe.contentWindow) {
                     mineIframe.contentWindow.postMessage(message, '*');
@@ -356,60 +354,54 @@
                 }
             }
 
-            // 🚀 新增：監聽從 Google 頁面跳轉回來的認證結果
-            if (auth) {
-                auth.getRedirectResult()
-                    .then((result) => {
-                        if (result.user) {
-                            console.log("Google 跳轉驗證成功:", result.user.displayName);
-                        }
-                    })
-                    .catch((error) => {
-                        console.error("跳轉驗證失敗:", error.message);
-                    });
-            }
-
-            // 監聽 Firebase 登入狀態轉變
-            if (auth) {
-                auth.onAuthStateChanged((user) => {
-                    if (user) {
-                        // 已登入：切換 UI
-                        authBtnLogin.classList.add('hidden');
-                        authUserInfo.classList.remove('hidden');
-                        authUserName.textContent = user.displayName || '匿名玩家';
-                        authUserAvatar.src = user.photoURL || 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100';
-                    } else {
-                        // 已登出：重設 UI
-                        authBtnLogin.classList.remove('hidden');
-                        authUserInfo.classList.add('hidden');
+            // 🚀 處理 Google 頁面重新路由跳轉（Redirect）回來的認證憑證
+            auth.getRedirectResult()
+                .then((result) => {
+                    if (result && result.user) {
+                        console.log("Google 跳轉驗證成功:", result.user.displayName);
                     }
-                    // 當狀態更新時，同步將狀態通知內部專案
-                    broadcastAuthStatus(user);
+                })
+                .catch((error) => {
+                    console.error("跳轉驗證失敗:", error.message);
                 });
-            }
 
-            // 🚀 修正：將原本的 signInWithPopup 改成 100% 免疫閃退的 signInWithRedirect
+            // 👥 核心監聽：Firebase 登入狀態轉變（全網頁只保留這一個監聽器）
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    // 已登入：隱藏快速登入按鈕，顯示大頭貼和姓名
+                    if (authBtnLogin) authBtnLogin.classList.add('hidden');
+                    if (authUserInfo) authUserInfo.classList.remove('hidden');
+                    if (authUserName) authUserName.textContent = user.displayName || '匿名玩家';
+                    if (authUserAvatar) authUserAvatar.src = user.photoURL || 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100';
+                } else {
+                    // 已登出：恢復登入按鈕，隱藏使用者資訊
+                    if (authBtnLogin) authBtnLogin.classList.remove('hidden');
+                    if (authUserInfo) authUserInfo.classList.add('hidden');
+                }
+                // 同步將最新狀態廣播通知內部遊戲 iframe
+                broadcastAuthStatus(user);
+            });
+
+            // 🔑 綁定登入點擊事件（100% 免疫閃退的 Redirect 模式）
             if (authBtnLogin) {
                 authBtnLogin.addEventListener('click', () => {
-                    if (!auth) {
-                        alert("💡 請先確認 Firebase 配置喔！");
-                        return;
-                    }
                     const provider = new firebase.auth.GoogleAuthProvider();
-                    auth.signInWithRedirect(provider); // 頁面直接跳轉 Google，徹底解決 iframe 內安全鎖定問題
+                    auth.signInWithRedirect(provider);
                 });
             }
 
-            // 點擊 登出
+            // 🚪 綁定登出點擊事件
             if (authBtnLogout) {
                 authBtnLogout.addEventListener('click', () => {
-                    if (auth) auth.signOut();
+                    auth.signOut().then(() => {
+                        console.log("已成功登出");
+                    });
                 });
             }
 
-            // 當 iframe 剛載入完成時，主動補發一次當前的登入狀態
+            // 當 iframe 剛載入完成時，主動補發一次當前的登入狀態，避免載入時間差
             const handleIframeLoad = () => {
-                if (auth) broadcastAuthStatus(auth.currentUser);
+                broadcastAuthStatus(auth.currentUser);
             };
             if (mineIframe) mineIframe.addEventListener('load', handleIframeLoad);
             if (artIframe) artIframe.addEventListener('load', handleIframeLoad);
@@ -464,7 +456,7 @@
             }
 
             // ----------------------------------------------------
-            // 🔄 全域監聽退出事件
+            // 🔄 全域監聽全螢幕退出事件
             // ----------------------------------------------------
             document.addEventListener('fullscreenchange', () => {
                 if (!document.fullscreenElement) {
