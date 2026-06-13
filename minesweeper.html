@@ -3,19 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>掃地雷 - 雲端同步版</title>
+    <title>掃地雷</title>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
         :root {
-            --bg-color: #94a3b8;
-            --card-bg: #ffffff;
-            --cell-unrevealed: #e2e8f0;
-            --cell-revealed: #f8fafc;
-            --cell-border: #64748b;
-            --text-main: #1e293b;
+            --bg-color: #0f172a; /* 酷炫的深色太空背景維持不變 */
+            --card-bg: #1e293b;
+            
+            /* 🚀 這裡改回經典灰色漸層 */
+            --cell-unrevealed: linear-gradient(135deg, #64748b, #475569); /* 未翻開：質感鐵灰色 */
+            --cell-revealed: linear-gradient(135deg, #ffffff, #e2e8f0);   /* 翻開後：白銀亮灰色 */
+            
+            --cell-border: #334155;
+            --text-main: #f8fafc;
             --accent-red: #ef4444;
-            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+            --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
         }
 
         body {
@@ -37,6 +40,7 @@
             text-align: center;
             max-width: 450px;
             width: 100%;
+            border: 1px solid #475569;
         }
 
         h1 {
@@ -48,64 +52,82 @@
         .status-bar {
             display: flex;
             justify-content: space-between;
-            background-color: #f1f5f9;
+            background-color: #0f172a;
             padding: 8px 16px;
             border-radius: 8px;
             margin-bottom: 16px;
             font-weight: bold;
-            color: #475569;
+            color: #94a3b8;
+            border: 1px solid #334155;
         }
 
+        /* 🎬 啟用 3D 透視景深，這是翻卡片動畫的關鍵！ */
         .grid {
             display: grid;
-            grid-template-columns: repeat(10, 32px);
-            grid-template-rows: repeat(10, 32px);
-            gap: 2px;
-            background-color: var(--cell-border);
-            padding: 2px;
-            border-radius: 6px;
+            grid-template-columns: repeat(10, 34px);
+            grid-template-rows: repeat(10, 34px);
+            gap: 4px;
+            background-color: transparent;
             margin: 0 auto 16px auto;
             width: max-content;
+            perspective: 600px; 
         }
 
+        /* ✨ 3D 翻卡片本體樣式 */
         .cell {
-            background-color: var(--cell-unrevealed);
-            border-radius: 2px;
+            position: relative;
+            background: var(--cell-unrevealed);
+            border-radius: 6px;
             display: flex;
             justify-content: center;
             align-items: center;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 16px;
             cursor: pointer;
-            transition: background-color 0.1s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            
+            /* 翻轉動畫核心設定 */
+            transform-style: preserve-3d;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s;
         }
 
+        /* 滑鼠懸停微調 */
         .cell:hover:not(.revealed) {
-            background-color: #cbd5e1;
+            filter: brightness(1.2);
+            transform: scale(1.05);
         }
 
+        /* 🌪️ 翻開狀態：執行 3D 翻轉與漸層顏色切換 */
         .cell.revealed {
-            background-color: var(--cell-revealed);
+            background: var(--cell-revealed);
+            transform: rotateY(180deg); /* 沿 Y 軸翻轉 180 度 */
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
             cursor: default;
         }
 
+        /* 因為翻轉了 180 度，裡面的文字必須轉回來，否則字會變反的 */
+        .cell.revealed span {
+            transform: rotateY(180deg);
+            display: inline-block;
+        }
+
+        /* 💥 地雷與插旗漸層樣式 */
         .cell.mine {
-            background-color: #fecaca;
+            background: linear-gradient(135deg, #fca5a5, #ef4444) !important;
+            box-shadow: 0 0 12px #ef4444;
         }
 
         .cell.flag {
-            background-color: #fef08a;
+            background: linear-gradient(135deg, #fef08a, #eab308) !important;
         }
 
-        /* 數字顏色 */
-        .cell[data-count="1"] { color: #2563eb; }
-        .cell[data-count="2"] { color: #16a34a; }
-        .cell[data-count="3"] { color: #dc2626; }
-        .cell[data-count="4"] { color: #7c3aed; }
-        .cell[data-count="5"] { color: #9a3412; }
-        .cell[data-count="6"] { color: #0891b2; }
-        .cell[data-count="7"] { color: #1e293b; }
-        .cell[data-count="8"] { color: #64748b; }
+        /* 🎨 數字色彩優化（在灰色襯托下更清晰） */
+        .cell span[data-count="1"] { color: #3b82f6; font-weight: 800; } /* 亮藍 */
+        .cell span[data-count="2"] { color: #10b981; font-weight: 800; } /* 亮綠 */
+        .cell span[data-count="3"] { color: #ef4444; font-weight: 800; } /* 亮紅 */
+        .cell span[data-count="4"] { color: #a855f7; font-weight: 800; } /* 亮紫 */
+        .cell span[data-count="5"] { color: #f97316; font-weight: 800; } /* 橘 */
+        .cell span[data-count="6"] { color: #06b6d4; font-weight: 800; } /* 青綠 */
 
         .btn {
             background-color: #2563eb;
@@ -123,12 +145,12 @@
             background-color: #1d4ed8;
         }
 
-        /* 彈出視窗樣式優化 */
+        /* 彈出視窗樣式 */
         .overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(4px);
+            background-color: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(6px);
             display: none;
             justify-content: center;
             align-items: center;
@@ -136,11 +158,13 @@
         }
 
         .result-box {
-            background-color: white;
+            background-color: #1e293b;
+            border: 1px solid #475569;
+            color: white;
             padding: 24px;
             border-radius: 16px;
             text-align: center;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
             max-width: 380px;
             width: 90%;
             animation: popIn 0.3s ease-out;
@@ -154,22 +178,20 @@
         .result-box h2 {
             margin: 0 0 8px 0;
             font-size: 1.5rem;
-            color: var(--text-main);
         }
 
         .result-box p {
-            color: #64748b;
+            color: #94a3b8;
             margin: 0 0 16px 0;
-            font-size: 0.95rem;
         }
 
-        /* 🖥️ 排行榜表格樣式 */
+        /* 排行榜表格樣式 */
         .leaderboard-section {
             margin: 16px 0;
-            background: #f8fafc;
+            background: #0f172a;
             border-radius: 12px;
             padding: 12px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #334155;
             max-height: 200px;
             overflow-y: auto;
         }
@@ -177,10 +199,10 @@
         .leaderboard-title {
             font-size: 0.9rem;
             font-weight: bold;
-            color: #475569;
+            color: #cbd5e1;
             margin-bottom: 8px;
             text-align: left;
-            border-left: 4px solid #2563eb;
+            border-left: 4px solid #3b82f6;
             padding-left: 6px;
         }
 
@@ -194,7 +216,7 @@
             color: #64748b;
             font-weight: 600;
             padding: 4px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #334155;
             text-align: left;
         }
 
@@ -202,7 +224,7 @@
             padding: 6px 4px;
             vertical-align: middle;
             text-align: left;
-            color: #334155;
+            color: #e2e8f0;
         }
 
         .player-info {
@@ -215,7 +237,6 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: #cbd5e1;
             object-fit: cover;
         }
 
@@ -225,19 +246,18 @@
             display: inline-block;
             text-align: center;
         }
-        .rank-1 { color: #eab308; } /* 金 */
-        .rank-2 { color: #94a3b8; } /* 銀 */
-        .rank-3 { color: #b45309; } /* 銅 */
+        .rank-1 { color: #eab308; }
+        .rank-2 { color: #94a3b8; }
+        .rank-3 { color: #b45309; }
 
         .view-mode-btn {
-            background-color: #64748b;
+            background-color: #475569;
             margin-right: 8px;
         }
         .view-mode-btn:hover {
-            background-color: #475569;
+            background-color: #334155;
         }
 
-        /* 殘局檢視模式 */
         .overlay.view-mode {
             background-color: transparent;
             backdrop-filter: none;
@@ -251,7 +271,7 @@
 <body>
 
     <div class="game-container">
-        <h1 id="game-title">💣 掃地雷 - 雲端同步版</h1>
+        <h1 id="game-title">💣 掃地雷 - 3D 翻卡版</h1>
         
         <div class="status-bar">
             <div>🚩 剩餘地雷: <span id="mine-count">10</span></div>
@@ -280,7 +300,7 @@
                     </thead>
                     <tbody id="leaderboard-body">
                         <tr>
-                            <td colspan="3" style="text-align: center; color: #94a3b8; padding: 10px;">排行榜讀取中...</td>
+                            <td colspan="3" style="text-align: center; color: #64748b; padding: 10px;">排行榜讀取中...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -295,7 +315,7 @@
 
     <script>
         // ----------------------------------------------------
-        // 🔥 Firebase Config 初始化配置
+        // 🔥 Firebase Config 初始化
         // ----------------------------------------------------
         const firebaseConfig = {
             apiKey: "AIzaSyB6_TjyUdF0EsR3reZeObF57JgUEe4gGLQ",
@@ -313,36 +333,22 @@
                 firebase.initializeApp(firebaseConfig);
             }
             db = firebase.firestore();
-            console.log("【遊戲內部】Firebase Firestore 初始化成功！");
-        } else {
-            console.error("【遊戲內部】找不到 Firebase SDK，請確認頂部有引入 script。");
         }
 
-        // ----------------------------------------------------
-        // 🔐 跨網域通訊監聽：接收來自 index.html 的登入狀態
-        // ----------------------------------------------------
+        // 🔐 接收主網頁登入狀態
         let currentUser = null;
-
         window.addEventListener('message', (event) => {
             if (!event.data) return;
             if (event.data.type === 'AUTH_CHANGE' || event.data.type === 'PORTFOLIO_AUTH_STATE') {
                 currentUser = event.data.user;
                 const gameTitle = document.getElementById('game-title');
-                if (gameTitle) {
-                    if (currentUser) {
-                        gameTitle.textContent = `💣 掃地雷 (玩家: ${currentUser.displayName || '已登入'})`;
-                        console.log("【遊戲內部】成功接收主網頁登入狀態:", currentUser.displayName);
-                    } else {
-                        gameTitle.textContent = "💣 掃地雷 - 雲端同步版";
-                        console.log("【遊戲內部】目前為訪客（未登入）狀態");
-                    }
+                if (gameTitle && currentUser) {
+                    gameTitle.textContent = `💣 掃地雷 (玩家: ${currentUser.displayName || '已登入'})`;
                 }
             }
         });
 
-        // ----------------------------------------------------
-        // 🎮 遊戲核心邏輯變數
-        // ----------------------------------------------------
+        // 🎮 遊戲核心變數
         const SIZE = 10;
         const MINE_NUM = 10;
         let board = [];
@@ -363,13 +369,9 @@
         const resultTitle = document.getElementById('result-title');
         const resultDesc = document.getElementById('result-desc');
 
-        // ----------------------------------------------------
-        // ⏱️ 計時器機制
-        // ----------------------------------------------------
         function startTimer() {
             if (timerInterval) clearInterval(timerInterval);
             timeElapsed = 0;
-            timerEl.textContent = "000";
             timerInterval = setInterval(() => {
                 timeElapsed++;
                 if (timeElapsed > 999) timeElapsed = 999;
@@ -378,62 +380,46 @@
         }
 
         function stopTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
         }
 
-        // ----------------------------------------------------
-        // 🛠️ 遊戲初始化
-        // ----------------------------------------------------
         function initGame() {
             gameId++;
             stopTimer();
             timeElapsed = 0;
             timerEl.textContent = "000";
-            
             isGameOver = false;
             isFirstClick = true;
             revealedCount = 0;
             mines.clear();
             flags.clear();
-            
             overlay.style.display = 'none';
             overlay.classList.remove('view-mode');
             gridEl.style.pointerEvents = 'auto';
             mineCountEl.textContent = MINE_NUM;
-
             gridEl.innerHTML = '';
             board = [];
 
             for (let r = 0; r < SIZE; r++) {
                 board[r] = [];
                 for (let c = 0; c < SIZE; c++) {
-                    board[r][c] = {
-                        r: r, c: c,
-                        isMine: false,
-                        isRevealed: false,
-                        isFlagged: false,
-                        neighborMines: 0
-                    };
+                    board[r][c] = { r, c, isMine: false, isRevealed: false, isFlagged: false, neighborMines: 0 };
 
                     const cellEl = document.createElement('div');
                     cellEl.id = `cell-${r}-${c}`;
                     cellEl.className = 'cell';
                     
+                    // 內部塞入一個 span 包裹文字，方便在 3D 翻轉時將文字轉正
+                    const contentSpan = document.createElement('span');
+                    cellEl.appendChild(contentSpan);
+                    
                     cellEl.addEventListener('click', () => handleLeftClick(r, c));
-                    cellEl.addEventListener('contextmenu', (e) => {
-                        e.preventDefault();
-                        handleRightClick(r, c);
-                    });
-
+                    cellEl.addEventListener('contextmenu', (e) => { e.preventDefault(); handleRightClick(r, c); });
                     gridEl.appendChild(cellEl);
                 }
             }
         }
 
-        // 布雷（確保第一下絕對不踩雷）
         function generateMines(firstR, firstC) {
             while (mines.size < MINE_NUM) {
                 let r = Math.floor(Math.random() * SIZE);
@@ -443,7 +429,6 @@
                 board[r][c].isMine = true;
             }
 
-            // 計算四周地雷數
             for (let r = 0; r < SIZE; r++) {
                 for (let c = 0; c < SIZE; c++) {
                     if (board[r][c].isMine) continue;
@@ -451,9 +436,7 @@
                     for (let dr = -1; dr <= 1; dr++) {
                         for (let dc = -1; dc <= 1; dc++) {
                             let nr = r + dr, nc = c + dc;
-                            if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc].isMine) {
-                                count++;
-                            }
+                            if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc].isMine) count++;
                         }
                     }
                     board[r][c].neighborMines = count;
@@ -461,86 +444,71 @@
             }
         }
 
-        // ----------------------------------------------------
-        // 👆 玩家點擊操作
-        // ----------------------------------------------------
         function handleLeftClick(r, c) {
             if (isGameOver || board[r][c].isRevealed || board[r][c].isFlagged) return;
-
             if (isFirstClick) {
                 isFirstClick = false;
                 generateMines(r, c);
                 startTimer();
             }
-
-            if (board[r][c].isMine) {
-                triggerGameOver(false);
-                return;
-            }
-
+            if (board[r][c].isMine) { triggerGameOver(false); return; }
             revealCell(r, c);
-
-            if (revealedCount === SIZE * SIZE - MINE_NUM) {
-                triggerGameOver(true);
-            }
         }
 
-        function handleLeftClick(r, c) {
-            if (isGameOver || board[r][c].isRevealed || board[r][c].isFlagged) return;
-
-            if (isFirstClick) {
-                isFirstClick = false;
-                generateMines(r, c);
-                startTimer();
+        function handleRightClick(r, c) {
+            if (isGameOver || board[r][c].isRevealed) return;
+            const cellEl = document.getElementById(`cell-${r}-${c}`);
+            const span = cellEl.querySelector('span');
+            if (board[r][c].isFlagged) {
+                board[r][c].isFlagged = false;
+                flags.delete(`${r},${c}`);
+                cellEl.classList.remove('flag');
+                if(span) span.textContent = '';
+            } else {
+                if (flags.size >= MINE_NUM) return;
+                board[r][c].isFlagged = true;
+                flags.add(`${r},${c}`);
+                cellEl.classList.add('flag');
+                if(span) span.textContent = '🚩';
             }
-
-            if (board[r][c].isMine) {
-                triggerGameOver(false);
-                return;
-            }
-
-            // 🚀 呼叫帶有延遲動畫的翻開函式
-            revealCell(r, c);
+            mineCountEl.textContent = MINE_NUM - flags.size;
         }
 
         // ----------------------------------------------------
-        // 🌊 遞迴翻開格子：完美保留你的經典波浪擴散動畫效果
+        // 🌊 3D 翻轉與漸層波浪擴散機制（保留你的延遲核心）
         // ----------------------------------------------------
         function revealCell(r, c, delay = 0) {
             if (r < 0 || r >= SIZE || c < 0 || c >= SIZE || board[r][c].isRevealed || board[r][c].isFlagged) return;
 
-            // 標記為已翻開
             board[r][c].isRevealed = true;
             revealedCount++;
 
             const cellEl = document.getElementById(`cell-${r}-${c}`);
+            const span = cellEl.querySelector('span');
             const currentId = gameId;
 
-            // 🎬 運用 setTimeout 創造完美的波浪向外擴散視覺特效
+            // 🎬 漸進式計時器：製造水波紋式 3D 翻轉效果
             setTimeout(() => {
-                if (currentId !== gameId) return; // 避免新一局干擾舊局
+                if (currentId !== gameId) return;
                 
-                cellEl.classList.add('revealed');
+                cellEl.classList.add('revealed'); // 這會觸發 CSS 沿 Y 軸翻轉與轉色
 
-                if (board[r][c].neighborMines > 0) {
-                    cellEl.textContent = board[r][c].neighborMines;
-                    cellEl.setAttribute('data-count', board[r][c].neighborMines);
+                if (board[r][c].neighborMines > 0 && span) {
+                    span.textContent = board[r][c].neighborMines;
+                    span.setAttribute('data-count', board[r][c].neighborMines);
                 }
 
-                // 如果翻開的格子成功達到勝利條件，觸發勝利
                 if (revealedCount === SIZE * SIZE - MINE_NUM && !isGameOver) {
                     triggerGameOver(true);
                 }
             }, delay);
 
-            // 🌊 如果周圍沒有地雷，繼續往 8 個方向推播動畫
             if (board[r][c].neighborMines === 0) {
-                let nextDelay = delay + 30; // 每次擴散往後延遲 30 毫秒，形成波浪感
+                let nextDelay = delay + 35; // 每次向外擴散增加 35 毫秒
                 for (let dr = -1; dr <= 1; dr++) {
                     for (let dc = -1; dc <= 1; dc++) {
                         if (dr === 0 && dc === 0) continue;
                         let nr = r + dr, nc = c + dc;
-                        // 檢查邊界且未被翻開，才繼續往下擴散
                         if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && !board[nr][nc].isRevealed && !board[nr][nc].isFlagged) {
                             revealCell(nr, nc, nextDelay);
                         }
@@ -550,163 +518,93 @@
         }
 
         // ----------------------------------------------------
-        // 🏆 遊戲勝利：分數雲端同步
+        // 🏁 結束判定：隨機引爆 + 載入排行榜
         // ----------------------------------------------------
+        function triggerGameOver(win) {
+            if (isGameOver) return;
+            isGameOver = true;
+            stopTimer(); 
+            loadLeaderboard();
+
+            if (!win) {
+                // 失敗：地雷帶有紅色微光漸層碎裂引爆
+                for (let r = 0; r < SIZE; r++) {
+                    for (let c = 0; c < SIZE; c++) {
+                        if (board[r][c].isMine) {
+                            const el = document.getElementById(`cell-${r}-${c}`);
+                            const span = el.querySelector('span');
+                            const currentId = gameId;
+                            
+                            setTimeout(() => {
+                                if (currentId !== gameId) return;
+                                el.classList.add('revealed', 'mine');
+                                if(span) span.textContent = '💣';
+                            }, Math.random() * 450); 
+                        }
+                    }
+                }
+            } else {
+                gameWin(timeElapsed);
+            }
+
+            // 留足 1.2 秒讓 3D 翻轉與隨機地雷爆炸動畫跑完，再滑出排行榜
+            setTimeout(() => {
+                resultTitle.textContent = win ? "🎉 任務達成" : "💀 遊戲結束";
+                resultDesc.textContent = win ? `你完美避開地雷！耗時 ${timeElapsed} 秒。` : "踩到地雷了，下次再加油。";
+                overlay.style.display = 'flex';
+            }, 1200);
+        }
+
         function gameWin(finalTime) {
-            console.log("🎉 遊戲勝利！花費秒數:", finalTime);
-
-            if (!currentUser) {
-                console.log("💡 目前為訪客身分，分數將不儲存到雲端。");
-                return; 
-            }
-
-            if (!db) {
-                console.error("❌ 錯誤：Firestore 資料庫尚未初始化成功。");
-                return;
-            }
-
-            console.log("🚀 正在將分數寫入 Firebase Firestore...");
+            if (!currentUser || !db) return;
             db.collection('minesweeper_scores').add({
                 uid: currentUser.uid,
                 name: currentUser.displayName || '匿名玩家',
                 photoURL: currentUser.photoURL || '',
                 score: Number(finalTime), 
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            })
-            .then(() => {
-                console.log("✅ 【雲端同步】分數已成功寫入！");
-                // 上傳成功後，即時刷新排行榜
-                loadLeaderboard();
-            })
-            .catch((error) => {
-                console.error("❌ 分數上傳失敗:", error.message);
-            });
+            }).then(() => { loadLeaderboard(); });
         }
 
-        // ----------------------------------------------------
-        // 📊 讀取並渲染雲端排行榜
-        // ----------------------------------------------------
         function loadLeaderboard() {
             const tbody = document.getElementById('leaderboard-body');
-            if (!tbody) return;
+            if (!tbody || !db) return;
 
-            if (!db) {
-                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #ef4444;">資料庫未連線</td></tr>`;
-                return;
-            }
-
-            // 查詢 minesweeper_scores 集合：依分數(秒數)從小到大排序，取前 5 名
-            db.collection('minesweeper_scores')
-                .orderBy('score', 'asc')
-                .limit(5)
-                .get()
+            db.collection('minesweeper_scores').orderBy('score', 'asc').limit(5).get()
                 .then((querySnapshot) => {
-                    tbody.innerHTML = ''; // 清空加載中文字
-                    
+                    tbody.innerHTML = '';
                     if (querySnapshot.empty) {
-                        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8;">目前尚無高分紀錄！快來搶佔第一名！</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #64748b;">目前尚無紀錄！</td></tr>`;
                         return;
                     }
-
                     let rank = 1;
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
-                        const score = data.score;
-                        const name = data.name || '匿名玩家';
-                        const photoURL = data.photoURL || '';
-
-                        // 判斷前三名獎牌樣式
-                        let rankClass = '';
-                        if (rank <= 3) rankClass = `rank-${rank}`;
-
+                        let rankClass = rank <= 3 ? `rank-${rank}` : '';
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td><span class="rank-badge ${rankClass}">${rank}</span></td>
                             <td>
                                 <div class="player-info">
-                                    <img class="player-avatar" src="${photoURL || 'https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_144dp.png'}" onerror="this.src='https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_144dp.png'">
-                                    <span style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
+                                    <img class="player-avatar" src="${data.photoURL || 'https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_144dp.png'}" onerror="this.src='https://www.gstatic.com/images/branding/product/2x/avatar_anonymous_144dp.png'">
+                                    <span style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${data.name || '匿名'}</span>
                                 </div>
                             </td>
-                            <td style="text-align: right; font-weight: bold; color: #2563eb;">${score} 秒</td>
+                            <td style="text-align: right; font-weight: bold; color: #3b82f6;">${data.score} 秒</td>
                         `;
                         tbody.appendChild(tr);
                         rank++;
                     });
-                })
-                .catch((error) => {
-                    console.error("❌ 讀取排行榜失敗:", error);
-                    tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #ef4444;">排行榜載入失敗</td></tr>`;
                 });
         }
 
-        // ----------------------------------------------------
-        // 🏁 判定遊戲結束
-        // ----------------------------------------------------
-        function triggerGameOver(win) {
-            if (isGameOver) return;
-            isGameOver = true;
-            stopTimer(); 
-
-            // 不管輸贏，先在背景默默載入最新排行榜數據，才不會讓玩家感覺卡頓
-            loadLeaderboard();
-
-            if (!win) {
-                // 💥 失敗動畫：讓盤面上所有的地雷隨機在 0 ~ 0.4 秒內逐一爆發，保留經典碎裂感
-                for (let r = 0; r < SIZE; r++) {
-                    for (let c = 0; c < SIZE; c++) {
-                        if (board[r][c].isMine) {
-                            const el = document.getElementById(`cell-${r}-${c}`);
-                            const currentId = gameId;
-                            
-                            setTimeout(() => {
-                                if (currentId !== gameId) return;
-                                el.classList.add('revealed', 'mine');
-                                el.textContent = '💣';
-                            }, Math.random() * 400); 
-                        }
-                    }
-                }
-            } else {
-                // 🏆 勝利：將成績同步到 Firebase 雲端
-                gameWin(timeElapsed);
-            }
-
-            // 🕒 關鍵優化：特別延遲 1000 毫秒（1秒）再讓排行榜滑出來！
-            // 這樣可以確保玩家能完整看完你的點擊擴散、或者地雷全部劈哩啪啦爆炸完的精彩畫面！
-            setTimeout(() => {
-                resultTitle.textContent = win ? "🎉 任務達成" : "💀 遊戲結束";
-                resultDesc.textContent = win ? `你完美避開地雷！耗時 ${timeElapsed} 秒。` : "踩到地雷了，下次再加油。";
-                overlay.style.display = 'flex';
-            }, 1000);
-        }
-
-        // ----------------------------------------------------
-        // 🔍 殘局檢視模式切換
-        // ----------------------------------------------------
         function toggleViewMode(e) {
             if(e) e.stopPropagation();
             overlay.classList.toggle('view-mode');
-            
-            if (overlay.classList.contains('view-mode')) {
-                gridEl.style.pointerEvents = 'none';
-            } else {
-                gridEl.style.pointerEvents = 'auto';
-            }
+            gridEl.style.pointerEvents = overlay.classList.contains('view-mode') ? 'none' : 'auto';
         }
 
-        function handleOverlayClick() {
-            if (isGameOver && overlay.classList.contains('view-mode')) {
-                toggleViewMode();
-            }
-        }
-
-        overlay.addEventListener('contextmenu', (e) => {
-            if (isGameOver && overlay.classList.contains('view-mode')) {
-                e.preventDefault();
-                toggleViewMode();
-            }
-        });
+        function handleOverlayClick() { if (isGameOver && overlay.classList.contains('view-mode')) toggleViewMode(); }
 
         document.getElementById('reset-btn').onclick = initGame;
         window.onload = initGame;
