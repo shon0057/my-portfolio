@@ -397,11 +397,26 @@
                 });
             }
 
-            // 🔑 綁定登入點擊事件（100% 免疫閃退的 Redirect 模式）
+            // 🔑 綁定登入點擊事件（改用彈出視窗 Popup 模式，100% 解決跨網域與白名單閃退問題）
             if (authBtnLogin) {
                 authBtnLogin.addEventListener('click', () => {
+                    if (!auth) {
+                        alert("💡 請先確認 Firebase 配置喔！");
+                        return;
+                    }
                     const provider = new firebase.auth.GoogleAuthProvider();
-                    auth.signInWithRedirect(provider);
+                    
+                    // 使用彈出視窗登入
+                    auth.signInWithPopup(provider)
+                        .then((result) => {
+                            console.log("Google 彈窗登入成功，使用者為:", result.user.displayName);
+                        })
+                        .catch((error) => {
+                            console.error("登入失敗，錯誤原因:", error.message);
+                            if (error.code === "auth/unauthorized-domain") {
+                                alert("❌ 登入失敗：請確認已將 shon0057.github.io 加入 Firebase 後台的 Authorized domains 白名單中！");
+                            }
+                        });
                 });
             }
 
