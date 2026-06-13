@@ -555,15 +555,81 @@
             }, 1200);
         }
 
+        // ----------------------------------------------------
+        // 🏆 遊戲勝利：分數雲端同步（個人最佳紀錄防洗板機制）
+        // ----------------------------------------------------
         function gameWin(finalTime) {
-            if (!currentUser || !db) return;
-            db.collection('minesweeper_scores').add({
-                uid: currentUser.uid,
-                name: currentUser.displayName || '匿名玩家',
-                photoURL: currentUser.photoURL || '',
-                score: Number(finalTime), 
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => { loadLeaderboard(); });
+            console.log("🎉 遊戲勝利！花費秒數:", finalTime);
+
+            if (!currentUser) {
+                console.log("💡 目前為訪客身分，分數將不儲存到雲端。");
+                return; 
+            }
+
+            if (!db) {
+                console.error("❌ 錯誤：Firestore 資料庫尚未初始化成功。");
+                return;
+            }
+
+            const newScore = Number(finalTime);
+            const userScoresRef = db.collection('minesweeper_scores');
+
+            console.log("🚀 正在檢查雲端是否有該玩家的歷史紀錄...");
+
+            // 🔍 步驟 1：先用目前的 uid 去搜尋有沒有過往紀錄
+            userScoresRef.where('uid', '==', currentUser.uid).get()
+                .then((querySnapshot) => {
+                    
+                    if (querySnapshot.empty) {
+                        // 🆕 狀況 A：沒玩過，直接寫入第一筆成績
+                        console.log("📝 偵測為新玩家，正在建立首次計分紀錄...");
+                        userScoresRef.add({
+                            uid: currentUser.uid,
+                            name: currentUser.displayName || '匿名玩家',
+                            photoURL: currentUser.photoURL || '',
+                            score: newScore, 
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        })
+                        .then(() => {
+                            console.log("✅ 【雲端同步】首次成績已成功寫入！");
+                            loadLeaderboard(); // 即時刷新世界排行榜
+                        });
+                        
+                    } else {
+                        // 🔄 狀況 B：之前玩過，取出第一筆紀錄（理論上一個人只會查出一筆）
+                        const existingDoc = querySnapshot.docs[0];
+                        const existingData = existingDoc.data();
+                        const previousBestScore = Number(existingData.score);
+
+                        console.log(`💡 找到歷史紀錄！過往最佳成績為: ${previousBestScore} 秒`);
+
+                        // 👑 步驟 2：核心判定！秒數越少代表越厲害。新分數小於舊分數才更新！
+                        if (newScore < previousBestScore) {
+                            console.log(`🔥 突破個人極限！新紀錄 ${newScore} 秒優於舊紀錄 ${previousBestScore} 秒，執行覆蓋更新...`);
+                            
+                            existingDoc.ref.update({
+                                name: currentUser.displayName || '匿名玩家', // 順便更新可能變更過的大頭貼或暱稱
+                                photoURL: currentUser.photoURL || '',
+                                score: newScore,
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                            })
+                            .then(() => {
+                                console.log("✅ 【雲端同步】個人歷史最高紀錄已成功覆蓋更新！");
+                                loadLeaderboard(); // 即時刷新世界排行榜
+                            })
+                            .catch((error) => {
+                                console.error("❌ 更新紀錄失敗:", error.message);
+                            });
+                        } else {
+                            // ☕ 狀況 C：雖然贏了，但沒有打破自己的歷史最高紀錄
+                            console.log(`☕ 本次成績 (${newScore} 秒) 未能超越歷史個人最佳 (${previousBestScore} 秒)，雲端保持原紀錄。`);
+                            loadLeaderboard(); // 依然載入天梯榜給玩家看
+                        }
+                    }
+                })
+                .catch((error) => {
+                    console.error("❌ 檢查使用者紀錄時發生錯誤:", error.message);
+                });
         }
 
         function loadLeaderboard() {
