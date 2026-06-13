@@ -505,18 +505,25 @@
         }
 
         // 遞迴翻開格子
+        // ----------------------------------------------------
+        // 🌊 遞迴翻開格子：形成經典波浪擴散效果
+        // ----------------------------------------------------
         function revealCell(r, c) {
+            // 超出邊界、已翻開或已被插旗的格子就不處理
             if (r < 0 || r >= SIZE || c < 0 || c >= SIZE || board[r][c].isRevealed || board[r][c].isFlagged) return;
 
             board[r][c].isRevealed = true;
             revealedCount++;
+            
             const cellEl = document.getElementById(`cell-${r}-${c}`);
-            cellEl.classList.add('revealed');
+            cellEl.classList.add('revealed'); // 觸發 CSS transition 動畫
 
             if (board[r][c].neighborMines > 0) {
+                // 如果周圍有地雷，顯示數字，停止擴散
                 cellEl.textContent = board[r][c].neighborMines;
                 cellEl.setAttribute('data-count', board[r][c].neighborMines);
             } else {
+                // 🚀 空白格子：利用 setTimeout 或直接遞迴往周圍 8 個方向擴散開來！
                 for (let dr = -1; dr <= 1; dr++) {
                     for (let dc = -1; dc <= 1; dc++) {
                         revealCell(r + dr, c + dc);
@@ -624,18 +631,20 @@
             isGameOver = true;
             stopTimer(); 
 
-            // 預先載入最新排行榜（不論輸贏都顯示）
+            // 🚀 不管輸贏，彈出視窗前先載入最新排行榜（默默在背景讀取）
             loadLeaderboard();
 
             if (!win) {
-                // 失敗動畫：翻開所有炸彈
+                // 💥 失敗動畫：讓盤面上所有的地雷隨機在 0 ~ 0.4 秒內逐一爆發，形成波浪爆炸感！
                 for (let r = 0; r < SIZE; r++) {
                     for (let c = 0; c < SIZE; c++) {
                         if (board[r][c].isMine) {
                             const el = document.getElementById(`cell-${r}-${c}`);
                             const currentId = gameId;
+                            
+                            // 這裡就是你的波浪引爆靈魂！
                             setTimeout(() => {
-                                if (currentId !== gameId) return;
+                                if (currentId !== gameId) return; // 防止新一局干擾舊局
                                 el.classList.add('revealed', 'mine');
                                 el.textContent = '💣';
                             }, Math.random() * 400); 
@@ -643,11 +652,11 @@
                     }
                 }
             } else {
-                // 勝利：呼叫雲端上傳機制
+                // 🏆 勝利：呼叫雲端上傳機制
                 gameWin(timeElapsed);
             }
 
-            // 彈出視窗
+            // 🕒 延遲 800 毫秒再彈出排行榜與結果視窗，確保玩家能看完地雷全部爆炸的動畫！
             setTimeout(() => {
                 resultTitle.textContent = win ? "🎉 任務達成" : "💀 遊戲結束";
                 resultDesc.textContent = win ? `你完美避開地雷！耗時 ${timeElapsed} 秒。` : "踩到地雷了，下次再加油。";
