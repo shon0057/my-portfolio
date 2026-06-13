@@ -315,11 +315,20 @@
         // ----------------------------------------------------
         // 🏆 遊戲勝利：分數雲端同步
         // ----------------------------------------------------
-        function gameWin(timeElapsed) {
-            clearInterval(timer);
+        // ----------------------------------------------------
+        // 🏆 遊戲勝利：分數雲端同步
+        // ----------------------------------------------------
+        function gameWin(finalTime) {
+            // 🚀 修正：安全地清除全域計時器 timerInterval
+            if (typeof stopTimer === 'function') {
+                stopTimer();
+            } else if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
             isGameOver = true;
             
-            console.log("🎉 遊戲勝利！花費秒數:", timeElapsed);
+            console.log("🎉 遊戲勝利！花費秒數:", finalTime);
 
             // 1. 檢查有沒有登入資料
             if (!currentUser) {
@@ -330,7 +339,6 @@
             // 2. 檢查資料庫連線實例是否存在
             if (!db) {
                 console.error("❌ 錯誤：Firestore 資料庫 (db) 尚未初始化成功，無法上傳分數！");
-                alert("資料庫連線失敗，無法同步分數。");
                 return;
             }
 
@@ -341,13 +349,11 @@
                 uid: currentUser.uid,
                 name: currentUser.displayName || '匿名玩家',
                 photoURL: currentUser.photoURL || '',
-                score: timeElapsed, // 存入秒數
+                score: Number(finalTime), // 確保存入的是數字
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             })
             .then(() => {
                 console.log("✅ 【雲端同步】分數已成功寫入 minesweeper_scores 集合！");
-                // 如果你有寫載入排行榜的方法，可以在這裡執行：
-                // if (typeof loadLeaderboard === 'function') loadLeaderboard();
             })
             .catch((error) => {
                 console.error("❌ 分數上傳失敗，請檢查 Firebase Database 的 Rules 規則:", error.message);
@@ -577,11 +583,13 @@
                     }
                 }
             } else {
+                // 🚀 修正：明確將全域記錄的 timeElapsed 秒數代入
                 gameWin(timeElapsed);
             }
 
             setTimeout(() => {
                 resultTitle.textContent = win ? "🎉 任務達成" : "💀 遊戲結束";
+                // 🚀 修正：文字顯示也統一使用全域的 timeElapsed
                 resultDesc.textContent = win ? `你完美避開地雷！耗時 ${timeElapsed} 秒。` : "踩到地雷了，下次再加油。";
                 overlay.style.display = 'flex';
             }, 800);
