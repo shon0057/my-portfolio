@@ -344,13 +344,19 @@
                     email: user.email
                 } : null;
 
-                const message = { type: 'AUTH_CHANGE', user: userData };
+                // 【修正核心】同時定義新舊兩種 type，確保掃地雷與畫布都能正確識別！
+                const messageNew = { type: 'PORTFOLIO_AUTH_STATE', user: userData };
+                const messageLegacy = { type: 'AUTH_CHANGE', user: userData }; // 相容掃地雷遊戲的 'AUTH_CHANGE'
                 
                 if (mineIframe && mineIframe.contentWindow) {
-                    mineIframe.contentWindow.postMessage(message, '*');
+                    // 同時送出兩種，保證遊戲接得到
+                    mineIframe.contentWindow.postMessage(messageNew, '*');
+                    mineIframe.contentWindow.postMessage(messageLegacy, '*');
+                    console.log("主網頁已向 掃地雷 廣播登入狀態:", user ? user.displayName : "未登入");
                 }
                 if (artIframe && artIframe.contentWindow) {
-                    artIframe.contentWindow.postMessage(message, '*');
+                    artIframe.contentWindow.postMessage(messageNew, '*');
+                    artIframe.contentWindow.postMessage(messageLegacy, '*');
                 }
             }
 
@@ -366,21 +372,30 @@
                 });
 
             // 👥 核心監聽：Firebase 登入狀態轉變（全網頁只保留這一個監聽器）
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    // 已登入：隱藏快速登入按鈕，顯示大頭貼和姓名
-                    if (authBtnLogin) authBtnLogin.classList.add('hidden');
-                    if (authUserInfo) authUserInfo.classList.remove('hidden');
-                    if (authUserName) authUserName.textContent = user.displayName || '匿名玩家';
-                    if (authUserAvatar) authUserAvatar.src = user.photoURL || 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100';
-                } else {
-                    // 已登出：恢復登入按鈕，隱藏使用者資訊
-                    if (authBtnLogin) authBtnLogin.classList.remove('hidden');
-                    if (authUserInfo) authUserInfo.classList.add('hidden');
-                }
-                // 同步將最新狀態廣播通知內部遊戲 iframe
-                broadcastAuthStatus(user);
-            });
+            if (auth) {
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        // 已登入：切換 UI
+                        authBtnLogin.classList.add('hidden');
+                        authUserInfo.classList.remove('hidden');
+                        authUserName.textContent = user.displayName || '匿名玩家';
+                        authUserAvatar.src = user.photoURL || 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100';
+                        
+                        console.log("Firebase 偵測到使用者已登入:", user.displayName);
+                    } else {
+                        // 已登出：重設 UI
+                        authBtnLogin.classList.remove('remove'); // 確保移除隱藏
+                        authBtnLogin.classList.remove('hidden');
+                        authUserInfo.classList.add('hidden');
+                        console.log("Firebase 偵測到目前為登出狀態");
+                    }
+                    
+                    // 【優化】稍微延遲 300 毫秒廣播，確保內嵌的 iframe 已經完全準備好接收 postMessage
+                    setTimeout(() => {
+                        broadcastAuthStatus(user);
+                    }, 300);
+                });
+            }
 
             // 🔑 綁定登入點擊事件（100% 免疫閃退的 Redirect 模式）
             if (authBtnLogin) {
