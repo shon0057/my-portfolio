@@ -258,53 +258,72 @@
         <div id="view-hint">點擊任意鍵或右鍵返回結果畫面</div>
     </div>
     <script>
-// --- ☁️ 你的跨視窗 Firebase 登入狀態同步區 ---
-        let currentUser = null;
-        let db = null; 
+// ----------------------------------------------------
+        // 🔐 全域使用者變數 與 跨網域通訊監聽
+        // ----------------------------------------------------
+        let currentUser = null; // 用來儲存從主網頁傳過來的登入使用者資料
 
-        try {
-            if (firebase && firebase.apps.length > 0) {
-                db = firebase.firestore();
-            }
-        } catch(e) {
-            console.log("Firebase 尚未完全初始化，等待外部注入。");
-        }
-
+        // 監聽來自外部（主網頁 index.html）的登入狀態廣播
         window.addEventListener('message', (event) => {
-            if (event.data.type === 'AUTH_CHANGE') {
-                currentUser = event.data.user;
-                const titleEl = document.getElementById('game-title');
-                if (currentUser) {
-                    console.log(`遊戲已同步登入：${currentUser.displayName}`);
-                    titleEl.textContent = `掃地雷 (${currentUser.displayName})`;
-                    if (typeof loadLeaderboard === 'function') loadLeaderboard(); 
-                } else {
-                    titleEl.textContent = `掃地雷`;
+            // 安全檢查：確保資料存在
+            if (!event.data) return;
+
+            // 同時支援主網頁發出的新舊兩種訊息型態 ('AUTH_CHANGE' 或 'PORTFOLIO_AUTH_STATE')
+            if (event.data.type === 'AUTH_CHANGE' || event.data.type === 'PORTFOLIO_AUTH_STATE') {
+                currentUser = event.data.user; // 將使用者資料存入全域變數
+                
+                // 動態更新遊戲標題，讓玩家知道已經連動成功！
+                const gameTitle = document.querySelector('h1') || document.getElementById('game-title');
+                if (gameTitle) {
+                    if (currentUser) {
+                        gameTitle.textContent = `💣 掃地雷 (玩家: ${currentUser.displayName || '已登入'})`;
+                        console.log("【遊戲內部】已成功接收到主網頁的登入資料:", currentUser.displayName);
+                    } else {
+                        gameTitle.textContent = "💣 掃地雷 - 雲端同步版";
+                        console.log("【遊戲內部】目前為未登入狀態");
+                    }
                 }
             }
         });
 
-        function gameWin(secondsSpent) {
-            // 【安全優化】基本防作弊：驗證上傳秒數是否與當前遊戲計時相符，且盤面確實完全解開
-            const requiredRevealed = (SIZE * SIZE) - MINES;
-            if (secondsSpent !== timeElapsed || revealedCount !== requiredRevealed) {
-                console.error("檢測到異常的分數上傳請求，已拒絕。");
-                return;
+        // ----------------------------------------------------
+        // 🏆 遊戲勝利：分數雲端同步機制
+        // ----------------------------------------------------
+        function gameWin(timeElapsed) {
+            clearInterval(timer);
+            isGameOver = true;
+            
+            console.log("🎉 遊戲勝利！花費秒數:", timeElapsed);
+
+            // 檢查是否有成功拿到主網頁傳來的 user 資料
+            if (!currentUser) {
+                console.log("💡 偵測為訪客身分（未登入），本次成績將不會同步至 Firebase 雲端天梯榜。");
+                return; 
             }
 
-            if (currentUser && db) {
-                console.log(`過關！正在上傳分數：${secondsSpent} 秒`);
-                db.collection("leaderboard").doc(currentUser.uid).set({
-                    name: currentUser.displayName || "匿名玩家",
-                    score: secondsSpent, 
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true }).then(() => {
-                    console.log("分數上傳成功！");
-                }).catch(err => {
-                    console.error("分數上傳失敗:", err);
+            // 確保 Firebase Firestore 元件可用
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                const db = firebase.firestore();
+                
+                console.log("🚀 正在上傳分數至 Firebase Firestore...");
+                
+                // 將成績寫入 Firebase 資料庫 (集合名稱統一為 'minesweeper_scores')
+                db.collection('minesweeper_scores').add({
+                    uid: currentUser.uid,
+                    name: currentUser.displayName || '匿名玩家',
+                    photoURL: currentUser.photoURL || '',
+                    score: timeElapsed,              // 耗時秒數，秒數越少排名越前面
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp() // 伺服器時間
+                })
+                .then(() => {
+                    console.log("✅ 成績已成功上傳至雲端天梯榜！");
+                    // 如果遊戲內有重新渲染排行榜的方法，可以在這裡呼叫，例如：loadLeaderboard();
+                })
+                .catch((error) => {
+                    console.error("❌ 分數上傳失敗，請檢查 Firebase Rules 權限設定:", error.message);
                 });
             } else {
-                console.log("未登入或資料庫未就緒，不進行雲端存檔。");
+                console.error("❌ 找不到 Firebase Firestore 元件，請確保遊戲頂部有引入相應的 SDK script");
             }
         }
 
