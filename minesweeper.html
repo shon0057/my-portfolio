@@ -485,48 +485,65 @@
             }
         }
 
-        function handleRightClick(r, c) {
-            if (isGameOver || board[r][c].isRevealed) return;
+        function handleLeftClick(r, c) {
+            if (isGameOver || board[r][c].isRevealed || board[r][c].isFlagged) return;
 
-            const cellEl = document.getElementById(`cell-${r}-${c}`);
-            if (board[r][c].isFlagged) {
-                board[r][c].isFlagged = false;
-                flags.delete(`${r},${c}`);
-                cellEl.classList.remove('flag');
-                cellEl.textContent = '';
-            } else {
-                if (flags.size >= MINE_NUM) return;
-                board[r][c].isFlagged = true;
-                flags.add(`${r},${c}`);
-                cellEl.classList.add('flag');
-                cellEl.textContent = '🚩';
+            if (isFirstClick) {
+                isFirstClick = false;
+                generateMines(r, c);
+                startTimer();
             }
-            mineCountEl.textContent = MINE_NUM - flags.size;
+
+            if (board[r][c].isMine) {
+                triggerGameOver(false);
+                return;
+            }
+
+            // 🚀 呼叫帶有延遲動畫的翻開函式
+            revealCell(r, c);
         }
 
-        // 遞迴翻開格子
         // ----------------------------------------------------
-        // 🌊 遞迴翻開格子：形成經典波浪擴散效果
+        // 🌊 遞迴翻開格子：完美保留你的經典波浪擴散動畫效果
         // ----------------------------------------------------
-        function revealCell(r, c) {
-            // 超出邊界、已翻開或已被插旗的格子就不處理
+        function revealCell(r, c, delay = 0) {
             if (r < 0 || r >= SIZE || c < 0 || c >= SIZE || board[r][c].isRevealed || board[r][c].isFlagged) return;
 
+            // 標記為已翻開
             board[r][c].isRevealed = true;
             revealedCount++;
-            
-            const cellEl = document.getElementById(`cell-${r}-${c}`);
-            cellEl.classList.add('revealed'); // 觸發 CSS transition 動畫
 
-            if (board[r][c].neighborMines > 0) {
-                // 如果周圍有地雷，顯示數字，停止擴散
-                cellEl.textContent = board[r][c].neighborMines;
-                cellEl.setAttribute('data-count', board[r][c].neighborMines);
-            } else {
-                // 🚀 空白格子：利用 setTimeout 或直接遞迴往周圍 8 個方向擴散開來！
+            const cellEl = document.getElementById(`cell-${r}-${c}`);
+            const currentId = gameId;
+
+            // 🎬 運用 setTimeout 創造完美的波浪向外擴散視覺特效
+            setTimeout(() => {
+                if (currentId !== gameId) return; // 避免新一局干擾舊局
+                
+                cellEl.classList.add('revealed');
+
+                if (board[r][c].neighborMines > 0) {
+                    cellEl.textContent = board[r][c].neighborMines;
+                    cellEl.setAttribute('data-count', board[r][c].neighborMines);
+                }
+
+                // 如果翻開的格子成功達到勝利條件，觸發勝利
+                if (revealedCount === SIZE * SIZE - MINE_NUM && !isGameOver) {
+                    triggerGameOver(true);
+                }
+            }, delay);
+
+            // 🌊 如果周圍沒有地雷，繼續往 8 個方向推播動畫
+            if (board[r][c].neighborMines === 0) {
+                let nextDelay = delay + 30; // 每次擴散往後延遲 30 毫秒，形成波浪感
                 for (let dr = -1; dr <= 1; dr++) {
                     for (let dc = -1; dc <= 1; dc++) {
-                        revealCell(r + dr, c + dc);
+                        if (dr === 0 && dc === 0) continue;
+                        let nr = r + dr, nc = c + dc;
+                        // 檢查邊界且未被翻開，才繼續往下擴散
+                        if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && !board[nr][nc].isRevealed && !board[nr][nc].isFlagged) {
+                            revealCell(nr, nc, nextDelay);
+                        }
                     }
                 }
             }
@@ -631,20 +648,19 @@
             isGameOver = true;
             stopTimer(); 
 
-            // 🚀 不管輸贏，彈出視窗前先載入最新排行榜（默默在背景讀取）
+            // 不管輸贏，先在背景默默載入最新排行榜數據，才不會讓玩家感覺卡頓
             loadLeaderboard();
 
             if (!win) {
-                // 💥 失敗動畫：讓盤面上所有的地雷隨機在 0 ~ 0.4 秒內逐一爆發，形成波浪爆炸感！
+                // 💥 失敗動畫：讓盤面上所有的地雷隨機在 0 ~ 0.4 秒內逐一爆發，保留經典碎裂感
                 for (let r = 0; r < SIZE; r++) {
                     for (let c = 0; c < SIZE; c++) {
                         if (board[r][c].isMine) {
                             const el = document.getElementById(`cell-${r}-${c}`);
                             const currentId = gameId;
                             
-                            // 這裡就是你的波浪引爆靈魂！
                             setTimeout(() => {
-                                if (currentId !== gameId) return; // 防止新一局干擾舊局
+                                if (currentId !== gameId) return;
                                 el.classList.add('revealed', 'mine');
                                 el.textContent = '💣';
                             }, Math.random() * 400); 
@@ -652,16 +668,17 @@
                     }
                 }
             } else {
-                // 🏆 勝利：呼叫雲端上傳機制
+                // 🏆 勝利：將成績同步到 Firebase 雲端
                 gameWin(timeElapsed);
             }
 
-            // 🕒 延遲 800 毫秒再彈出排行榜與結果視窗，確保玩家能看完地雷全部爆炸的動畫！
+            // 🕒 關鍵優化：特別延遲 1000 毫秒（1秒）再讓排行榜滑出來！
+            // 這樣可以確保玩家能完整看完你的點擊擴散、或者地雷全部劈哩啪啦爆炸完的精彩畫面！
             setTimeout(() => {
                 resultTitle.textContent = win ? "🎉 任務達成" : "💀 遊戲結束";
                 resultDesc.textContent = win ? `你完美避開地雷！耗時 ${timeElapsed} 秒。` : "踩到地雷了，下次再加油。";
                 overlay.style.display = 'flex';
-            }, 800);
+            }, 1000);
         }
 
         // ----------------------------------------------------
