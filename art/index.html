@@ -1,17 +1,21 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+  
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SketchWall - 頂級奢華藝術畫廊</title>
-  <script type="module" crossorigin src="./assets/index-BpegWbaO.js"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-B11u1nql.css">
 </head>
 <body class="dark-theme">
 
   <a href="../index.html#projects" id="btnBackToPortfolio" class="back-portfolio-btn">
-  <span>🏠 返回作品集主頁</span>
-</a>
+    <span>🏠 返回作品集主頁</span>
+  </a>
 
   <div id="welcomeOverlay" class="welcome-container">
     <div class="welcome-scroll-wrapper">
@@ -31,75 +35,69 @@
         </div>
         
         <div id="galleryGrid" class="gallery-grid"></div>
-        <p id="emptyGalleryText" class="empty-text" style="display: none;">目前尚無展出作品，快開啟創作留下你的第一幅鉅作！</p>
+        <p id="emptyGalleryText" class="empty-text" style="display:none;">美術館目前空無一人，等待您留下第一筆驚世之作...</p>
       </section>
-
+      
     </div>
   </div>
 
-  <main class="main-creative-section">
-    <div class="canvas-wrapper">
-      <canvas id="paintCanvas"></canvas>
-    </div>
-  </main>
+  <canvas id="paintCanvas"></canvas>
 
-  <div id="toolbar" class="luxury-toolbar hidden-ui">
+  <div id="toolbar" class="toolbar-container hidden-ui">
     <div class="tool-group">
-      <select id="selectTool" class="tool-select">
-        <option value="pencil">🖌️ 靈感鉛筆</option>
-        <option value="marker">🖊️ 內斂麥克筆</option>
-        <option value="highlighter">🖍️ 螢光渲染筆</option>
-        <option value="eraser">🧽 原子橡皮擦</option>
+      <select id="selectTool" class="premium-select">
+        <option value="pencil">🖋️ 奢華鋼筆</option>
+        <option value="highlighter">🖍️ 螢光典藏筆</option>
+        <option value="eraser">🧽 靈感橡皮擦</option>
       </select>
     </div>
 
-    <div class="tool-group slider-container">
-      <span>粗細</span>
-      <input type="range" id="sizeSlider" min="1" max="50" value="5">
-      <span id="sizeValue">5px</span>
+    <div class="tool-group size-group">
+      <input type="range" id="sizeSlider" min="1" max="50" value="5" class="premium-slider">
+      <span id="sizeValue" class="size-indicator">5px</span>
     </div>
 
     <div class="tool-group color-palette">
       <div class="color-dot active" data-color="#00ffcc" style="background-color: #00ffcc;"></div>
-      <div class="color-dot" data-color="#ff0055" style="background-color: #ff0055;"></div>
-      <div class="color-dot" data-color="#ffcc00" style="background-color: #ffcc00;"></div>
-      <div class="color-dot" data-color="#007aff" style="background-color: #007aff;"></div>
+      <div class="color-dot" data-color="#ff007f" style="background-color: #ff007f;"></div>
+      <div class="color-dot" data-color="#ffb703" style="background-color: #ffb703;"></div>
+      <div class="color-dot" data-color="#0077b6" style="background-color: #0077b6;"></div>
       <div class="color-dot" id="dynamicWhiteBlack" data-color="#ffffff" style="background-color: #ffffff;"></div>
     </div>
 
-    <div class="tool-group">
-      <button id="btnThemeToggle" class="action-btn" title="切換晝夜主題">🌙</button>
-      <button id="btnUndo" class="action-btn" title="撤銷上一筆">↩️</button>
-      <button id="btnClear" class="action-btn" title="全面清空畫布">🗑️</button>
-      <button id="btnSave" class="action-btn save-btn">收藏與發表 ✨</button>
+    <div class="tool-group action-buttons">
+      <button id="btnThemeToggle" class="circle-btn" title="切換畫布主題">🌙</button>
+      <button id="btnUndo" class="circle-btn" title="撤銷上一筆">↩️</button>
+      <button id="btnClear" class="circle-btn text-danger" title="全面清除重來">🗑️</button>
+      <button id="btnSave" class="prime-btn save-btn">✨ 收藏作品</button>
     </div>
   </div>
 
   <div id="saveModal" class="modal-overlay">
-    <div class="premium-showcase-card">
-      <button id="btnCloseModal" class="close-card-btn">&times;</button>
-      <div class="showcase-left">
-        <div class="art-frame">
-          <img id="previewImage" src="" alt="畫作預覽">
+    <div class="premium-modal-card animate-pop">
+      <div class="modal-header">
+        <h3>將靈感封存至藝術博物館</h3>
+        <p>這幅作品將永久上傳至當代極簡展示牆</p>
+      </div>
+      <div class="modal-body">
+        <div class="preview-box">
+          <img id="previewImage" src="" alt="畫布縮圖預覽">
+        </div>
+        <div class="form-group">
+          <label for="authorName">藝術家署名</label>
+          <input type="text" id="authorName" maxlength="15" placeholder="請輸入您的奢華暱稱...">
+        </div>
+        <div class="form-group">
+          <label for="authorComment">創作自白 / 留言故事</label>
+          <textarea id="authorComment" rows="3" maxlength="80" placeholder="分享這幅畫背後的靈魂故事... (限 80 字)"></textarea>
         </div>
       </div>
-      <div class="showcase-right">
-        <div class="meta-header">
-          <span class="badge">MUSEUM CURATION</span>
-          <h2>發表作品至雲端畫廊</h2>
+      <div class="modal-footer">
+        <span id="currentTimeStamp" class="serial-num">生成序號: --:--:--</span>
+        <div class="btn-cluster">
+          <button id="btnCloseModal" class="sec-btn">放棄返回</button>
+          <button id="btnConfirmSubmit" class="prime-btn">收藏至藝術大畫廊 ✨</button>
         </div>
-        <div class="input-fieldset">
-          <label for="authorName">藝術家署名</label>
-          <input type="text" id="authorName" placeholder="留下您的暱稱...">
-        </div>
-        <div class="input-fieldset">
-          <label for="authorComment">創作自白 / 故事</label>
-          <textarea id="authorComment" rows="4" placeholder="敘述這幅作品背後的靈感故事..."></textarea>
-        </div>
-        <div class="interactive-stats">
-          <span id="currentTimeStamp" class="timestamp">生成序號: --:--</span>
-        </div>
-        <button id="btnConfirmSubmit" class="submit-art-btn">收藏至藝術大畫廊 ✨</button>
       </div>
     </div>
   </div>
@@ -130,15 +128,14 @@
           <span id="viewThemeTag" class="timestamp">主題: --</span>
         </div>
         <div class="management-btn-group">
-  <button id="btnDownloadArt" class="manage-btn download">📥 下載作品</button>
-  
-  <button id="btnEditOnCanvas" class="manage-btn" style="background: #4a5568; color: #fff; display: none;">🎨 重新編輯畫布</button>
-  
-  <button id="btnDeleteArt" class="manage-btn delete">🗑️ 刪除作品</button>
-</div>
+          <button id="btnDownloadArt" class="manage-btn download">📥 下載作品</button>
+          <button id="btnEditOnCanvas" class="manage-btn" style="background: #4a5568; color: #fff; display:none;">✏️ 回到畫布覆蓋編輯</button>
+          <button id="btnDeleteArt" class="manage-btn delete" style="display: none;">🗑️ 銷毀作品</button>
+        </div>
       </div>
     </div>
   </div>
 
+  <script src="src/main.js"></script>
 </body>
 </html>
