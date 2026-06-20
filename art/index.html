@@ -1,95 +1,77 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>art</title>
-    <script type="module" crossorigin src="./assets/index-DSPxss-J.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-D1YWUp6G.css">
-  </head>
-  <body>
-    <div id="app"></div>
-  </body>
-</html>
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SketchWall - 頂級奢華藝術畫廊</title>
+  <script type="module" crossorigin src="./assets/index-Bl4BW9ad.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-B0xUcVCs.css">
 </head>
 <body class="dark-theme">
 
+  <a href="../index.html" class="portfolio-back-btn">
+    <span>🏠</span> 返回作品集主頁
+  </a>
+
   <div id="welcomeOverlay" class="welcome-container">
     <div class="welcome-scroll-wrapper">
+      
       <div class="welcome-card">
-        <div class="brand-logo">✨</div>
+        <div class="brand-logo">🎨</div>
         <h1>SketchWall</h1>
-        <p>在無限的數位畫布上，釋放你的靈感與美學意識。</p>
-        <button id="btnStartExplore" class="prime-btn">開始創作 🎨</button>
+        <p>歡迎來到極簡輕奢藝術畫廊。在這裡，您可以盡情釋放內心的色彩，將轉瞬即逝的靈感永遠刻印在雲端當代牆上。</p>
+        <button id="btnStartExplore" class="prime-btn">進入創作世界 🚀</button>
       </div>
-
-      <div class="gallery-section">
+      
+      <section class="gallery-section">
         <div class="gallery-header">
-          <span class="gallery-badge">MUSEUM EXHIBITION</span>
-          <h2>線上當代藝術牆</h2>
-          <p>歷史創作永久收藏於此，點擊作品卡片可進行【查看、編輯、刪除、下載】。</p>
+          <span class="gallery-badge">CONTEMPORARY EXHIBITION</span>
+          <h2>當代線上藝術牆</h2>
+          <p>匯聚全球創作者的靈感瞬間，點擊作品可進行收藏或管理</p>
         </div>
-        <div id="galleryGrid" class="gallery-grid">
-          <div id="emptyGalleryText" class="empty-text">目前尚無展出作品，快開啟創作留下你的第一幅鉅作！</div>
-        </div>
-      </div>
+        
+        <div id="galleryGrid" class="gallery-grid"></div>
+        <p id="emptyGalleryText" class="empty-text" style="display: none;">目前尚無展出作品，快開啟創作留下你的第一幅鉅作！</p>
+      </section>
+
     </div>
   </div>
 
-  <div class="main-creative-section">
+  <main class="main-creative-section">
     <div class="canvas-wrapper">
       <canvas id="paintCanvas"></canvas>
     </div>
+  </main>
 
-    <div id="toolbar" class="glass-panel hidden-ui">
-      <div class="ui-group">
-        <button id="btnThemeToggle" title="切換黑白畫布與主題">🌙</button>
-      </div>
+  <div id="toolbar" class="luxury-toolbar hidden-ui">
+    <div class="tool-group">
+      <select id="selectTool" class="tool-select">
+        <option value="pencil">🖌️ 靈感鉛筆</option>
+        <option value="marker">🖊️ 內斂麥克筆</option>
+        <option value="highlighter">🖍️ 螢光渲染筆</option>
+        <option value="eraser">🧽 原子橡皮擦</option>
+      </select>
+    </div>
 
-      <div class="divider"></div>
+    <div class="tool-group slider-container">
+      <span>粗細</span>
+      <input type="range" id="sizeSlider" min="1" max="50" value="5">
+      <span id="sizeValue">5px</span>
+    </div>
 
-      <div class="select-group">
-        <select id="selectTool" class="premium-select">
-          <option value="pencil">✏️ 鉛筆模式</option>
-          <option value="marker">🖌️ 麥克筆模式</option>
-          <option value="highlighter">✨ 螢光筆模式</option>
-          <option value="eraser">🧽 橡皮擦模式</option>
-        </select>
-      </div>
+    <div class="tool-group color-palette">
+      <div class="color-dot active" data-color="#00ffcc" style="background-color: #00ffcc;"></div>
+      <div class="color-dot" data-color="#ff0055" style="background-color: #ff0055;"></div>
+      <div class="color-dot" data-color="#ffcc00" style="background-color: #ffcc00;"></div>
+      <div class="color-dot" data-color="#007aff" style="background-color: #007aff;"></div>
+      <div class="color-dot" id="dynamicWhiteBlack" data-color="#ffffff" style="background-color: #ffffff;"></div>
+    </div>
 
-      <div class="divider"></div>
-
-      <div class="color-group">
-        <div class="color-dot active" data-color="#00ffcc" style="background-color: #00ffcc;"></div>
-        <div class="color-dot" data-color="#ff007f" style="background-color: #ff007f;"></div>
-        <div class="color-dot" data-color="#00a2ff" style="background-color: #00a2ff;"></div>
-        <div class="color-dot" data-color="#ffb700" style="background-color: #ffb700;"></div>
-        <div class="color-dot" data-color="#9d4edd" style="background-color: #9d4edd;"></div>
-        <div class="color-dot" id="dynamicWhiteBlack" data-color="#ffffff" style="background-color: #ffffff;"></div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="range-group">
-        <span>粗細</span>
-        <input type="range" id="sizeSlider" min="1" max="60" value="6">
-        <span id="sizeValue">6px</span>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="action-group">
-        <button id="btnUndo">↩️ 復原</button>
-        <button id="btnClear">🗑️ 清空</button>
-        <button id="btnSave" class="save-highlight">💾 發表作品</button>
-      </div>
+    <div class="tool-group">
+      <button id="btnThemeToggle" class="action-btn" title="切換晝夜主題">🌙</button>
+      <button id="btnUndo" class="action-btn" title="撤銷上一筆">↩️</button>
+      <button id="btnClear" class="action-btn" title="全面清空畫布">🗑️</button>
+      <button id="btnSave" class="action-btn save-btn">收藏與發表 ✨</button>
     </div>
   </div>
 
@@ -98,25 +80,24 @@
       <button id="btnCloseModal" class="close-card-btn">&times;</button>
       <div class="showcase-left">
         <div class="art-frame">
-          <img id="previewImage" src="" alt="你的畫作預覽">
+          <img id="previewImage" src="" alt="畫作預覽">
         </div>
       </div>
       <div class="showcase-right">
         <div class="meta-header">
-          <span class="badge">WALL OF FAME</span>
-          <h2>發表你的靈感</h2>
+          <span class="badge">MUSEUM CURATION</span>
+          <h2>發表作品至雲端畫廊</h2>
         </div>
         <div class="input-fieldset">
-          <label for="authorName">創作者署名</label>
-          <input type="text" id="authorName" placeholder="輸入你的藝術家暱稱..." value="匿名創作者">
+          <label for="authorName">藝術家署名</label>
+          <input type="text" id="authorName" placeholder="留下您的暱稱...">
         </div>
         <div class="input-fieldset">
-          <label for="authorComment">創作自白 / 留言</label>
-          <textarea id="authorComment" rows="3" placeholder="寫下這幅作品背後的故事..."></textarea>
+          <label for="authorComment">創作自白 / 故事</label>
+          <textarea id="authorComment" rows="4" placeholder="敘述這幅作品背後的靈感故事..."></textarea>
         </div>
         <div class="interactive-stats">
-          <button id="modalLikeBtn" class="like-btn">❤️ <span id="likeCount">0</span> 個讚</button>
-          <span id="currentTimeStamp" class="timestamp">發布時間: --:--</span>
+          <span id="currentTimeStamp" class="timestamp">生成序號: --:--</span>
         </div>
         <button id="btnConfirmSubmit" class="submit-art-btn">收藏至藝術大畫廊 ✨</button>
       </div>
@@ -148,7 +129,6 @@
           <span id="viewTimeStamp" class="timestamp">發布時間: --:--</span>
           <span id="viewThemeTag" class="timestamp">主題: --</span>
         </div>
-        
         <div class="management-btn-group">
           <button id="btnDownloadArt" class="manage-btn download">📥 下載作品</button>
           <button id="btnUpdateArt" class="manage-btn update">💾 儲存修改</button>
