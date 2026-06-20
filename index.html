@@ -366,29 +366,55 @@
             const artIframe = document.getElementById('artIframe');
 
             // 🔄 修正：統一發送給遊戲與畫布的密碼為 'AUTH_CHANGE'
-            function broadcastAuthStatus(user) {
-                const userData = user ? {
-                    uid: user.uid,
-                    displayName: user.displayName,
-                    photoURL: user.photoURL,
-                    email: user.email
-                } : null;
+          function broadcastAuthStatus(user) {
+    const userData = user ? {
+        uid: user.uid,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        email: user.email
+    } : null;
 
-                // 【修正核心】同時定義新舊兩種 type，確保掃地雷與畫布都能正確識別！
-                const messageNew = { type: 'PORTFOLIO_AUTH_STATE', user: userData };
-                const messageLegacy = { type: 'AUTH_CHANGE', user: userData }; // 相容掃地雷遊戲的 'AUTH_CHANGE'
-                
-                if (mineIframe && mineIframe.contentWindow) {
-                    // 同時送出兩種，保證遊戲接得到
-                    mineIframe.contentWindow.postMessage(messageNew, '*');
-                    mineIframe.contentWindow.postMessage(messageLegacy, '*');
-                    console.log("主網頁已向 掃地雷 廣播登入狀態:", user ? user.displayName : "未登入");
-                }
-                if (artIframe && artIframe.contentWindow) {
-                    artIframe.contentWindow.postMessage(messageNew, '*');
-                    artIframe.contentWindow.postMessage(messageLegacy, '*');
-                }
-            }
+    // 1. 這兩個是你原本準備給 掃地雷 用的封包
+    const messageNew = { type: 'PORTFOLIO_AUTH_STATE', user: userData };
+    const messageLegacy = { type: 'AUTH_CHANGE', user: userData }; 
+
+    // 2. 🌟 這是專門為 art (SketchWall) 精準訂製的相容格式！
+    const messageArt = {
+        type: 'AUTH_STATUS',
+        status: user ? {
+            loggedIn: true,
+            uid: user.uid,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            email: user.email
+        } : { loggedIn: false }
+    };
+    
+    if (mineIframe && mineIframe.contentWindow) {
+        // 送給掃地雷
+        mineIframe.contentWindow.postMessage(messageNew, '*');
+        mineIframe.contentWindow.postMessage(messageLegacy, '*');
+        console.log("主網頁已向 掃地雷 廣播登入狀態:", user ? user.displayName : "未登入");
+    }
+    if (artIframe && artIframe.contentWindow) {
+        // 🌟 同時把三種格式都發給 art，保證它不管是新版舊版程式碼，只要對到一個就能直接解析！
+        artIframe.contentWindow.postMessage(messageNew, '*');
+        artIframe.contentWindow.postMessage(messageLegacy, '*');
+        artIframe.contentWindow.postMessage(messageArt, '*'); // 👈 多送這行精準相容
+        console.log("主網頁已向 SketchWall 廣播登入狀態:", user ? user.displayName : "未登入");
+    }
+}
+
+            window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'REQUEST_AUTH_STATUS') {
+        console.log("📥 收到子視窗 SketchWall 請求，正在補發目前登入狀態...");
+        // 呼叫 Firebase SDK 取得當前使用者並補發
+        if (auth) {
+            broadcastAuthStatus(auth.currentUser);
+        }
+    }
+});
+
 
             // 🚀 處理 Google 頁面重新路由跳轉（Redirect）回來的認證憑證
             auth.getRedirectResult()
