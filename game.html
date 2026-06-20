@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <title>Gamer Hub // 雲端完美版 🎮</title>
+  <title>Gamer Hub 🎮</title>
   <style>
     :root {
       --bg-dark: #090d16;
@@ -113,7 +113,20 @@
       <button id="logoutBtn" style="flex: 1; background: #ef4444; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; display: none;">登出</button>
     </div>
   </div>
-
+<a href="index.html" style="
+    align-self: flex-start;
+    margin-bottom: 20px;
+    color: var(--text-gray);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.2s;
+" onmouseover="this.style.color='var(--neon-cyan)'" onmouseout="this.style.color='var(--text-gray)'">
+    ⬅️ 返回作品集主頁
+</a>
   <h1>Gamer Hub</h1>
   <div class="subtitle">即時同步全網最新數位遊戲特惠與全球遊戲庫搜尋</div>
 
@@ -253,11 +266,29 @@
     }
 
     // 🔵 功能 2：全球比價庫搜尋功能
+    // 🔵 修改後的全球比價庫搜尋功能（加入重置回首頁 12 排行按鈕）
     async function searchGame() {
       const query = searchInput.value.trim();
       if (!query) return alert('請輸入遊戲名稱！');
 
-      gridTitle.textContent = `🔍 搜尋 「${query}」 的結果：`;
+      // 🌟 在標題旁邊加上一個「❌ 清除搜尋」的按鈕，點擊直接觸發還原
+      gridTitle.innerHTML = `
+        🔍 搜尋 「${query}」 的結果：
+        <button onclick="resetSearch()" style="
+            font-size: 0.8rem; 
+            background: #1f2937; 
+            color: var(--text-gray); 
+            border: 1px solid #374151; 
+            padding: 4px 10px; 
+            border-radius: 6px; 
+            margin-left: 10px; 
+            cursor: pointer;
+            font-family: sans-serif;
+        " onmouseover="this.style.color='#fff'; this.style.borderColor='var(--neon-magenta)'" 
+           onmouseout="this.style.color='var(--text-gray)'; this.style.borderColor='#374151';">
+          ❌ 清除搜尋（回焦點特惠）
+        </button>
+      `;
       gridContainer.innerHTML = '<p style="color: var(--neon-cyan);">🔍 正在翻閱全球跨平台比價庫...</p>';
 
       try {
@@ -299,6 +330,13 @@
         console.error('搜尋失敗:', err);
         gridContainer.innerHTML = '<p style="color: #ef4444;">❌ 搜尋失敗，請稍後再試！</p>';
       }
+    }
+
+    // 🌟 新增：重置搜尋函數，一鍵切換回原來的 Steam 12 排行榜
+    function resetSearch() {
+      searchInput.value = ''; // 清空輸入框
+      gridTitle.textContent = '🔥 本週 Steam 焦點熱門特惠'; // 還原標題
+      loadDefaultDeals(); // 重新載入初始資料
     }
 
     // 🟢 功能 3：進階版追蹤功能 (將 storeId 完整傳送給後端儲存)
