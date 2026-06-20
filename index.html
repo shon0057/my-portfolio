@@ -230,7 +230,7 @@
                             <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 px-3 py-1 rounded-full border border-blue-500/20">Web App</span>
                             <span class="text-[10px] font-bold uppercase tracking-wider bg-green-500/10 text-green-400 px-3 py-1 rounded-full border border-green-500/20">Creative</span>
                         </div>
-                        <h3 class="text-3xl font-extrabold text-white mb-4">SketchWall 線上當代藝術牆</h3>
+                        <h3 id="sketchwall-title" class="text-3xl font-extrabold text-white mb-4">SketchWall 線上當代藝術牆</h3>
                         <p class="text-slate-400 mb-8 leading-relaxed">
                             這是一個供使用者自由揮灑靈感的數位畫布。具備流暢的繪圖體驗與雲端歷史創作資料庫，登入後即可編輯或刪除自身作品，且不開放他人竄改。
                         </p>
@@ -401,28 +401,31 @@
                     console.error("跳轉驗證失敗:", error.message);
                 });
 
-            // 👥 核心監聽：Firebase 登入狀態轉變（全網頁只保留這一個監聽器）
+            // 👥 核心監聽：Firebase 登入狀態轉變（全網頁只保留這一個監聽器，已完全移除非法全螢幕代碼）
             if (auth) {
                 auth.onAuthStateChanged((user) => {
                     if (user) {
                         // 已登入：切換 UI
-                        authBtnLogin.classList.add('hidden');
-                        authUserInfo.classList.remove('hidden');
-                        authUserName.textContent = user.displayName || '匿名玩家';
-                        authUserAvatar.src = user.photoURL || 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100';
+                        if (authBtnLogin) authBtnLogin.classList.add('hidden');
+                        if (authUserInfo) authUserInfo.classList.remove('hidden');
+                        if (authUserName) authUserName.textContent = user.displayName || '匿名玩家';
+                        if (authUserAvatar) authUserAvatar.src = user.photoURL || 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100';
                         
                         console.log("Firebase 偵測到使用者已登入:", user.displayName);
                     } else {
                         // 已登出：重設 UI
-                        authBtnLogin.classList.remove('remove'); // 確保移除隱藏
-                        authBtnLogin.classList.remove('hidden');
-                        authUserInfo.classList.add('hidden');
+                        if (authBtnLogin) {
+                            authBtnLogin.classList.remove('hidden'); // 顯示登入按鈕
+                        }
+                        if (authUserInfo) authUserInfo.classList.add('hidden');
                         console.log("Firebase 偵測到目前為登出狀態");
                     }
                     
                     // 【優化】稍微延遲 300 毫秒廣播，確保內嵌的 iframe 已經完全準備好接收 postMessage
                     setTimeout(() => {
-                        broadcastAuthStatus(user);
+                        if (typeof broadcastAuthStatus === 'function') {
+                            broadcastAuthStatus(user);
+                        }
                     }, 300);
                 });
             }
@@ -461,78 +464,14 @@
 
             // 當 iframe 剛載入完成時，主動補發一次當前的登入狀態，避免載入時間差
             const handleIframeLoad = () => {
-                broadcastAuthStatus(auth.currentUser);
+                if (auth && typeof broadcastAuthStatus === 'function') {
+                    broadcastAuthStatus(auth.currentUser);
+                }
             };
             if (mineIframe) mineIframe.addEventListener('load', handleIframeLoad);
             if (artIframe) artIframe.addEventListener('load', handleIframeLoad);
 
-
-            // ----------------------------------------------------
-            // 💣 踩地雷全螢幕邏輯
-            // ----------------------------------------------------
-            const btnMineFullscreen = document.getElementById('btnMineFullscreen');
-            const minesweeperContainer = document.getElementById('minesweeperContainer');
-
-            if (btnMineFullscreen && minesweeperContainer) {
-                btnMineFullscreen.addEventListener('click', () => {
-                    if (!document.fullscreenElement) {
-                        minesweeperContainer.requestFullscreen()
-                            .then(() => {
-                                btnMineFullscreen.innerHTML = '<span>❌ 退出全螢幕遊戲</span>';
-                                btnMineFullscreen.classList.replace('bg-blue-600', 'bg-rose-600');
-                                btnMineFullscreen.classList.replace('hover:bg-blue-500', 'hover:bg-rose-500');
-                            })
-                            .catch((err) => {
-                                console.error(`無法啟動踩地雷全螢幕: ${err.message}`);
-                            });
-                    } else {
-                        document.exitFullscreen();
-                    }
-                });
-            }
-
-            // ----------------------------------------------------
-            // 🎨 藝術牆全螢幕邏輯
-            // ----------------------------------------------------
-            const btnFullscreen = document.getElementById('btnFullscreen');
-            const artGalleryContainer = document.getElementById('artGalleryContainer');
-
-            if (btnFullscreen && artGalleryContainer) {
-                btnFullscreen.addEventListener('click', () => {
-                    if (!document.fullscreenElement) {
-                        artGalleryContainer.requestFullscreen()
-                            .then(() => {
-                                btnFullscreen.innerHTML = '<span>❌ 退出全螢幕觀展</span>';
-                                btnFullscreen.classList.replace('bg-indigo-600', 'bg-rose-600');
-                                btnFullscreen.classList.replace('hover:bg-indigo-500', 'hover:bg-rose-500');
-                            })
-                            .catch((err) => {
-                                console.error(`無法啟動藝術牆全螢幕: ${err.message}`);
-                            });
-                    } else {
-                        document.exitFullscreen();
-                    }
-                });
-            }
-
-            // ----------------------------------------------------
-            // 🔄 全域監聽全螢幕退出事件
-            // ----------------------------------------------------
-            document.addEventListener('fullscreenchange', () => {
-                if (!document.fullscreenElement) {
-                    if (btnMineFullscreen) {
-                        btnMineFullscreen.innerHTML = '<span>🖥️ 進入電競全螢幕模式</span>';
-                        btnMineFullscreen.classList.replace('bg-rose-600', 'bg-blue-600');
-                        btnMineFullscreen.classList.replace('hover:bg-rose-500', 'hover:bg-blue-500');
-                    }
-                    if (btnFullscreen) {
-                        btnFullscreen.innerHTML = '<span>🖥️ 進入沉浸式全螢幕觀展</span>';
-                        btnFullscreen.classList.replace('bg-rose-600', 'bg-indigo-600');
-                        btnFullscreen.classList.replace('hover:bg-rose-500', 'hover:bg-indigo-500');
-                    }
-                }
-            });
-        });
+        }); // 對應外層 DOMContentLoaded 的結束括號
     </script>
 </body>
 </html>

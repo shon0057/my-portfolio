@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SketchWall - 頂級奢華藝術畫廊</title>
-  <script type="module" crossorigin src="./assets/index-Bl4BW9ad.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-B0xUcVCs.css">
+  <script type="module" crossorigin src="./assets/index-k9fngfY5.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-B11u1nql.css">
 </head>
 <body class="dark-theme">
 
-  <a href="../index.html" class="portfolio-back-btn">
-    <span>🏠</span> 返回作品集主頁
-  </a>
+  <a href="../index.html#projects" id="btnBackToPortfolio" class="back-portfolio-btn">
+  <span>🏠 返回作品集主頁</span>
+</a>
 
   <div id="welcomeOverlay" class="welcome-container">
     <div class="welcome-scroll-wrapper">
@@ -130,10 +130,12 @@
           <span id="viewThemeTag" class="timestamp">主題: --</span>
         </div>
         <div class="management-btn-group">
-          <button id="btnDownloadArt" class="manage-btn download">📥 下載作品</button>
-          <button id="btnUpdateArt" class="manage-btn update">💾 儲存修改</button>
-          <button id="btnDeleteArt" class="manage-btn delete">🗑️ 刪除作品</button>
-        </div>
+  <button id="btnDownloadArt" class="manage-btn download">📥 下載作品</button>
+  
+  <button id="btnEditOnCanvas" class="manage-btn" style="background: #4a5568; color: #fff; display: none;">🎨 重新編輯畫布</button>
+  
+  <button id="btnDeleteArt" class="manage-btn delete">🗑️ 刪除作品</button>
+</div>
       </div>
     </div>
   </div>
