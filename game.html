@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <title>Gamer Hub 🎮</title>
+  <title>Gamer Hub // 雲端完美版 🎮</title>
   <style>
     :root {
       --bg-dark: #090d16;
@@ -39,7 +39,6 @@
 
     .subtitle { color: var(--text-gray); margin-bottom: 30px; }
 
-    /* 🔍 搜尋框樣式 */
     .search-container {
       display: flex; gap: 10px; width: 100%; max-width: 600px; margin-bottom: 40px;
     }
@@ -86,7 +85,6 @@
     .sale-price { font-size: 1.2rem; font-weight: bold; }
     .free-text { color: var(--neon-green); text-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
 
-    /* ➕ 追蹤按鈕樣式 */
     .track-btn {
       width: 100%; background-color: #1f2937; color: #cbd5e1; border: 1px solid #374151;
       padding: 10px; margin-top: 15px; border-radius: 6px; font-weight: bold;
@@ -113,20 +111,7 @@
       <button id="logoutBtn" style="flex: 1; background: #ef4444; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; display: none;">登出</button>
     </div>
   </div>
-<a href="index.html" style="
-    align-self: flex-start;
-    margin-bottom: 20px;
-    color: var(--text-gray);
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    transition: color 0.2s;
-" onmouseover="this.style.color='var(--neon-cyan)'" onmouseout="this.style.color='var(--text-gray)'">
-    ⬅️ 返回作品集主頁
-</a>
+
   <h1>Gamer Hub</h1>
   <div class="subtitle">即時同步全網最新數位遊戲特惠與全球遊戲庫搜尋</div>
 
@@ -156,14 +141,12 @@
       measurementId: "G-GT57T3FH1T"
     };
 
-    // 初始化 Firebase 前端
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    const BACKEND_URL = 'https://game-hub-six-zeta-16.vercel.app'; // 你的 Node.js 後端網址
+    const BACKEND_URL = 'https://game-hub-six-zeta-16.vercel.app'; 
     let CURRENT_USER_ID = "test-user-123"; 
 
-    // 🏪 全域唯一的商店編號對照表
     const STORE_MAP = {
       "1": "Steam 商店",
       "2": "Playfield",
@@ -173,7 +156,6 @@
       "25": "Epic Games 商店"
     };
 
-    // 抓取 UI 元素
     const authStatus = document.getElementById('authStatus');
     const authFields = document.getElementById('authFields');
     const loginBtn = document.getElementById('loginBtn');
@@ -185,7 +167,6 @@
     const searchBtn = document.getElementById('searchBtn');
     const wishlistGrid = document.getElementById('wishlistGrid');
 
-    // ================= 🔐 Firebase 身份監聽器 =================
     auth.onAuthStateChanged((user) => {
       if (user) {
         CURRENT_USER_ID = user.uid; 
@@ -205,7 +186,6 @@
       loadMyWishlist();
     });
 
-    // 🔵 註冊功能
     registerBtn.addEventListener('click', async () => {
       const email = document.getElementById('authEmail').value.trim();
       const password = document.getElementById('authPassword').value.trim();
@@ -216,7 +196,6 @@
       } catch (err) { alert('註冊失敗：' + err.message); }
     });
 
-    // 🟢 登入功能
     loginBtn.addEventListener('click', async () => {
       const email = document.getElementById('authEmail').value.trim();
       const password = document.getElementById('authPassword').value.trim();
@@ -227,13 +206,11 @@
       } catch (err) { alert('登入失敗：' + err.message); }
     });
 
-    // 🔴 登出功能
     logoutBtn.addEventListener('click', async () => {
       await auth.signOut();
       alert('🔒 已安全登出！');
     });
 
-    // 🟢 功能 1：載入首頁 Steam 特價榜
     async function loadDefaultDeals() {
       gridContainer.innerHTML = '<p style="color: var(--neon-cyan);">正在同步雲端特價資料...</p>';
       try {
@@ -246,6 +223,10 @@
           const isFree = savings === 100 || parseFloat(game.salePrice) === 0;
           const card = document.createElement('div');
           card.className = 'game-card';
+          
+          // ✨ 修正點擊事件：使用安全轉義，避免單引號與 ${} 造成的 JS 崩潰
+          const safeTitle = game.title.replace(/'/g, "\\'");
+          
           card.innerHTML = `
             <img class="game-thumb" src="${game.thumb}" alt="${game.title}">
             <div class="game-info">
@@ -257,7 +238,7 @@
                   <span class="sale-price ${isFree ? 'free-text' : ''}">${isFree ? 'FREE' : '$'+game.salePrice}</span>
                 </div>
               </div>
-              <button class="track-btn" onclick="promptTrackPriceWithStore('${game.gameID}', '${game.title.replace(/'/g, "\\'")}', '${game.thumb}', ${game.salePrice}, '1')">🎯 追蹤此折扣</button>
+              <button class="track-btn" onclick="promptTrackPriceWithStore('${game.gameID}', '${safeTitle}', '${game.thumb}', ${game.salePrice}, '1')">🎯 追蹤此折扣</button>
             </div>
           `;
           gridContainer.appendChild(card);
@@ -265,30 +246,11 @@
       } catch (err) { console.error(err); }
     }
 
-    // 🔵 功能 2：全球比價庫搜尋功能
-    // 🔵 修改後的全球比價庫搜尋功能（加入重置回首頁 12 排行按鈕）
     async function searchGame() {
       const query = searchInput.value.trim();
       if (!query) return alert('請輸入遊戲名稱！');
 
-      // 🌟 在標題旁邊加上一個「❌ 清除搜尋」的按鈕，點擊直接觸發還原
-      gridTitle.innerHTML = `
-        🔍 搜尋 「${query}」 的結果：
-        <button onclick="resetSearch()" style="
-            font-size: 0.8rem; 
-            background: #1f2937; 
-            color: var(--text-gray); 
-            border: 1px solid #374151; 
-            padding: 4px 10px; 
-            border-radius: 6px; 
-            margin-left: 10px; 
-            cursor: pointer;
-            font-family: sans-serif;
-        " onmouseover="this.style.color='#fff'; this.style.borderColor='var(--neon-magenta)'" 
-           onmouseout="this.style.color='var(--text-gray)'; this.style.borderColor='#374151';">
-          ❌ 清除搜尋（回焦點特惠）
-        </button>
-      `;
+      gridTitle.textContent = `🔍 搜尋 「${query}」 的結果：`;
       gridContainer.innerHTML = '<p style="color: var(--neon-cyan);">🔍 正在翻閱全球跨平台比價庫...</p>';
 
       try {
@@ -308,6 +270,7 @@
           const currentPrice = parseFloat(deal.salePrice) === 0 ? '0.00' : deal.salePrice;
           const storeName = deal.storeID && STORE_MAP[deal.storeID] ? STORE_MAP[deal.storeID] : "其他數位商店";
           const isFree = parseFloat(currentPrice) === 0;
+          const safeTitle = deal.title.replace(/'/g, "\\'");
 
           card.innerHTML = `
             <img class="game-thumb" src="${deal.thumb}" alt="${deal.title}">
@@ -321,7 +284,7 @@
                   🛒 販賣網站: <span style="color: #fff; font-weight: bold;">${storeName}</span>
                 </div>
               </div>
-              <button class="track-btn" onclick="promptTrackPriceWithStore('${deal.gameID}', '${deal.title.replace(/'/g, "\\'")}', '${deal.thumb}', ${currentPrice}, '${deal.storeID}')">🔔 加入願望清單</button>
+              <button class="track-btn" onclick="promptTrackPriceWithStore('${deal.gameID}', '${safeTitle}', '${deal.thumb}', ${currentPrice}, '${deal.storeID}')">🔔 加入願望清單</button>
             </div>
           `;
           gridContainer.appendChild(card);
@@ -332,20 +295,29 @@
       }
     }
 
-    // 🌟 新增：重置搜尋函數，一鍵切換回原來的 Steam 12 排行榜
-    function resetSearch() {
-      searchInput.value = ''; // 清空輸入框
-      gridTitle.textContent = '🔥 本週 Steam 焦點熱門特惠'; // 還原標題
-      loadDefaultDeals(); // 重新載入初始資料
-    }
-
-    // 🟢 功能 3：進階版追蹤功能 (將 storeId 完整傳送給後端儲存)
+    // 🟢 功能 3：進階版追蹤功能 (終極整合除錯防呆版)
     function promptTrackPriceWithStore(gameId, gameName, coverUrl, currentPrice, storeId) {
-      const targetPrice = prompt(`請輸入追蹤 【${gameName}】 的心理期望價 (美金 USD)：\n例如：當價格低於多少時通知你？`, "29.99");
+      const currentUser = firebase.auth().currentUser;
+      let userEmail = "";
+      let currentUid = CURRENT_USER_ID;
+
+      if (currentUser) {
+        userEmail = currentUser.email;
+        currentUid = currentUser.uid; 
+      } else {
+        userEmail = "test-user-123@gmail.com"; 
+      }
+
+      // 🔍 這次絕對會彈出來的除錯提示窗！
+      alert(`【發送前檢查】\n當前登入 UID: ${currentUid}\n抓到的 Email: "${userEmail}"`);
+
+      const targetPrice = prompt(`請輸入追蹤 【${gameName}】 的心理期望價 (美金 USD)：`, "29.99");
       if (targetPrice === null || targetPrice === "") return;
 
       const payload = {
-        userId: CURRENT_USER_ID, 
+        userId: currentUid, 
+        userEmail: userEmail,   
+        userEMail: userEmail,   
         gameId: gameId,
         gameName: gameName,
         coverUrl: coverUrl,
@@ -368,10 +340,10 @@
           alert(`❌ 失敗了：${data.message}`);
         }
       })
-      .catch(err => alert('❌ 無法連線到後端 Node.js 伺服器，請確保後端已啟動。'));
+      .catch(err => alert('❌ 無法連線到後端 Node.js 伺服器'));
     }
 
-    // 🌟 舊版相容轉接頭（已移除上方干擾的 style 標籤）
+    // 🌟 舊版相容轉接頭
     function promptTrackPrice(gameId, gameName, coverUrl, currentPrice) {
       promptTrackPriceWithStore(gameId, gameName, coverUrl, currentPrice, "1");
     }
@@ -384,7 +356,6 @@
     searchBtn.addEventListener('click', searchGame);
     searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchGame(); });
 
-    // 🟢 功能 4：拉取願望清單並精確對照 STORE_MAP 顯示
     async function loadMyWishlist() {
       try {
         const response = await fetch(`${BACKEND_URL}/api/wishlist/${CURRENT_USER_ID}`);
@@ -406,7 +377,6 @@
             card.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.2)';
           }
 
-          // 精確讀取全域 STORE_MAP，防止未定義的 storeId 被強制轉成 Steam
           const storeName = wish.storeId && STORE_MAP[wish.storeId] ? STORE_MAP[wish.storeId] : "Steam 商店";
 
           card.innerHTML = `
@@ -440,7 +410,6 @@
       }
     }
 
-    // 🔴 功能 5：刪除願望
     async function deleteFromWishlist(docId) {
       if (!confirm("確定要取消追蹤這款遊戲嗎？")) return;
 
@@ -461,7 +430,6 @@
       }
     }
 
-    // 初始化加載
     loadDefaultDeals();
     loadMyWishlist();
   </script>
